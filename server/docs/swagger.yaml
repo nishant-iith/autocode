@@ -1,0 +1,855 @@
+openapi: 3.0.0
+info:
+  title: AutoCode API
+  description: |
+    AutoCode is an online VS Code for Node.js development. This API provides endpoints for project management, 
+    file operations, templates, and import functionality.
+    
+    ## Features
+    - Project CRUD operations
+    - File system management
+    - Template-based project creation
+    - Import from ZIP files and GitHub repositories
+    - Real-time file synchronization via WebSocket
+    
+    ## Authentication
+    Most endpoints are public, but GitHub import may require a personal access token for private repositories.
+    
+  version: 1.0.0
+  contact:
+    name: AutoCode Team
+    email: support@autocode.dev
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+
+servers:
+  - url: http://localhost:5000/api
+    description: Development server
+  - url: https://autocode.app/api
+    description: Production server
+
+tags:
+  - name: Health
+    description: System health check
+  - name: Projects
+    description: Project management operations
+  - name: Files
+    description: File system operations
+  - name: Templates
+    description: Project templates
+
+components:
+  schemas:
+    Error:
+      type: object
+      required:
+        - error
+      properties:
+        error:
+          type: string
+          description: Error message
+        details:
+          type: string
+          description: Additional error details
+      example:
+        error: "Resource not found"
+        details: "The requested project does not exist"
+
+    HealthCheck:
+      type: object
+      required:
+        - status
+        - timestamp
+      properties:
+        status:
+          type: string
+          enum: [OK, ERROR]
+          description: System status
+        timestamp:
+          type: string
+          format: date-time
+          description: Timestamp of the health check
+      example:
+        status: "OK"
+        timestamp: "2024-01-15T10:30:00.000Z"
+
+    Project:
+      type: object
+      required:
+        - workspaceId
+        - name
+        - created
+        - modified
+      properties:
+        workspaceId:
+          type: string
+          format: uuid
+          description: Unique workspace identifier
+        name:
+          type: string
+          description: Project name
+        description:
+          type: string
+          description: Project description
+        created:
+          type: string
+          format: date-time
+          description: Creation timestamp
+        modified:
+          type: string
+          format: date-time
+          description: Last modification timestamp
+      example:
+        workspaceId: "550e8400-e29b-41d4-a716-446655440000"
+        name: "my-express-api"
+        description: "A REST API built with Express.js"
+        created: "2024-01-15T10:00:00.000Z"
+        modified: "2024-01-15T10:30:00.000Z"
+
+    ProjectCreate:
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          type: string
+          description: Project name
+        description:
+          type: string
+          description: Project description (optional)
+      example:
+        name: "my-new-project"
+        description: "A Node.js project"
+
+    ProjectCreateResponse:
+      type: object
+      required:
+        - workspaceId
+        - name
+        - path
+      properties:
+        workspaceId:
+          type: string
+          format: uuid
+          description: Created workspace ID
+        name:
+          type: string
+          description: Project name
+        description:
+          type: string
+          description: Project description
+        path:
+          type: string
+          description: File system path
+      example:
+        workspaceId: "550e8400-e29b-41d4-a716-446655440000"
+        name: "my-new-project"
+        description: "A Node.js project"
+        path: "/path/to/workspaces/550e8400-e29b-41d4-a716-446655440000"
+
+    FileNode:
+      type: object
+      required:
+        - id
+        - name
+        - type
+        - path
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Unique file identifier
+        name:
+          type: string
+          description: File or folder name
+        type:
+          type: string
+          enum: [file, folder]
+          description: Node type
+        path:
+          type: string
+          description: Relative path from workspace root
+        size:
+          type: integer
+          description: File size in bytes (files only)
+        modified:
+          type: string
+          format: date-time
+          description: Last modification time
+        children:
+          type: array
+          items:
+            $ref: '#/components/schemas/FileNode'
+          description: Child nodes (folders only)
+        isExpanded:
+          type: boolean
+          description: Expansion state (folders only)
+      example:
+        id: "file-123"
+        name: "package.json"
+        type: "file"
+        path: "package.json"
+        size: 1024
+        modified: "2024-01-15T10:30:00.000Z"
+
+    FileContent:
+      type: object
+      required:
+        - content
+        - path
+        - size
+        - modified
+      properties:
+        content:
+          type: string
+          description: File content
+        path:
+          type: string
+          description: File path
+        size:
+          type: integer
+          description: File size in bytes
+        modified:
+          type: string
+          format: date-time
+          description: Last modification time
+      example:
+        content: "console.log('Hello, World!');"
+        path: "index.js"
+        size: 28
+        modified: "2024-01-15T10:30:00.000Z"
+
+    FileContentUpdate:
+      type: object
+      required:
+        - content
+      properties:
+        content:
+          type: string
+          description: New file content
+      example:
+        content: "console.log('Hello, AutoCode!');"
+
+    FileCreate:
+      type: object
+      required:
+        - path
+        - name
+        - type
+      properties:
+        path:
+          type: string
+          description: Parent directory path
+        name:
+          type: string
+          description: File or folder name
+        type:
+          type: string
+          enum: [file, folder]
+          description: Type to create
+      example:
+        path: "src"
+        name: "utils.js"
+        type: "file"
+
+    FileRename:
+      type: object
+      required:
+        - oldPath
+        - newPath
+      properties:
+        oldPath:
+          type: string
+          description: Current file path
+        newPath:
+          type: string
+          description: New file path
+      example:
+        oldPath: "old-name.js"
+        newPath: "new-name.js"
+
+    Template:
+      type: object
+      required:
+        - id
+        - name
+        - description
+      properties:
+        id:
+          type: string
+          description: Template identifier
+        name:
+          type: string
+          description: Template display name
+        description:
+          type: string
+          description: Template description
+      example:
+        id: "express-basic"
+        name: "Express.js Basic"
+        description: "A basic Express.js server with routing"
+
+    TemplateCreate:
+      type: object
+      properties:
+        name:
+          type: string
+          description: Custom project name (optional)
+      example:
+        name: "my-express-app"
+
+    GitHubImport:
+      type: object
+      required:
+        - repoUrl
+      properties:
+        repoUrl:
+          type: string
+          format: uri
+          description: GitHub repository URL
+        accessToken:
+          type: string
+          description: GitHub personal access token (for private repos)
+      example:
+        repoUrl: "https://github.com/user/repo"
+        accessToken: "ghp_xxxxxxxxxxxxxxxxxxxx"
+
+    ImportResponse:
+      type: object
+      required:
+        - workspaceId
+        - name
+        - message
+      properties:
+        workspaceId:
+          type: string
+          format: uuid
+          description: Created workspace ID
+        name:
+          type: string
+          description: Project name
+        description:
+          type: string
+          description: Project description
+        message:
+          type: string
+          description: Success message
+      example:
+        workspaceId: "550e8400-e29b-41d4-a716-446655440000"
+        name: "imported-project"
+        message: "Project imported successfully"
+
+  securitySchemes:
+    GitHubToken:
+      type: apiKey
+      in: header
+      name: Authorization
+      description: GitHub personal access token for private repository access
+
+paths:
+  /health:
+    get:
+      tags: [Health]
+      summary: Health check
+      description: Check if the API server is running and healthy
+      operationId: healthCheck
+      responses:
+        '200':
+          description: Server is healthy
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthCheck'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /projects/list:
+    get:
+      tags: [Projects]
+      summary: List all projects
+      description: Retrieve a list of all projects in the workspace
+      operationId: listProjects
+      responses:
+        '200':
+          description: List of projects
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Project'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /projects/create:
+    post:
+      tags: [Projects]
+      summary: Create new project
+      description: Create a new empty project with basic Node.js structure
+      operationId: createProject
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProjectCreate'
+      responses:
+        '200':
+          description: Project created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProjectCreateResponse'
+        '400':
+          description: Invalid input
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /projects/{workspaceId}:
+    delete:
+      tags: [Projects]
+      summary: Delete project
+      description: Delete a project and all its files permanently
+      operationId: deleteProject
+      parameters:
+        - name: workspaceId
+          in: path
+          required: true
+          description: Workspace ID to delete
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Project deleted successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  message:
+                    type: string
+        '404':
+          description: Project not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /projects/import-zip:
+    post:
+      tags: [Projects]
+      summary: Import project from ZIP
+      description: Import a project by uploading a ZIP file
+      operationId: importZip
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                zipFile:
+                  type: string
+                  format: binary
+                  description: ZIP file to import
+      responses:
+        '200':
+          description: ZIP imported successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ImportResponse'
+        '400':
+          description: No ZIP file provided or invalid file
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /projects/import-github:
+    post:
+      tags: [Projects]
+      summary: Import project from GitHub
+      description: Import a project from a GitHub repository
+      operationId: importGitHub
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GitHubImport'
+      responses:
+        '200':
+          description: GitHub repository imported successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ImportResponse'
+        '400':
+          description: Invalid repository URL
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Repository not found or access denied
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /files/tree/{workspaceId}:
+    get:
+      tags: [Files]
+      summary: Get file tree
+      description: Retrieve the complete file tree structure for a workspace
+      operationId: getFileTree
+      parameters:
+        - name: workspaceId
+          in: path
+          required: true
+          description: Workspace ID
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: File tree structure
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/FileNode'
+        '404':
+          description: Workspace not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /files/content/{workspaceId}/{filePath}:
+    get:
+      tags: [Files]
+      summary: Get file content
+      description: Retrieve the content of a specific file
+      operationId: getFileContent
+      parameters:
+        - name: workspaceId
+          in: path
+          required: true
+          description: Workspace ID
+          schema:
+            type: string
+            format: uuid
+        - name: filePath
+          in: path
+          required: true
+          description: File path (URL encoded)
+          schema:
+            type: string
+      responses:
+        '200':
+          description: File content
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FileContent'
+        '404':
+          description: File not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+    put:
+      tags: [Files]
+      summary: Save file content
+      description: Update the content of a specific file
+      operationId: saveFileContent
+      parameters:
+        - name: workspaceId
+          in: path
+          required: true
+          description: Workspace ID
+          schema:
+            type: string
+            format: uuid
+        - name: filePath
+          in: path
+          required: true
+          description: File path (URL encoded)
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FileContentUpdate'
+      responses:
+        '200':
+          description: File saved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  path:
+                    type: string
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /files/create/{workspaceId}:
+    post:
+      tags: [Files]
+      summary: Create file or folder
+      description: Create a new file or folder in the workspace
+      operationId: createFile
+      parameters:
+        - name: workspaceId
+          in: path
+          required: true
+          description: Workspace ID
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FileCreate'
+      responses:
+        '200':
+          description: File or folder created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  path:
+                    type: string
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /files/{workspaceId}/{filePath}:
+    delete:
+      tags: [Files]
+      summary: Delete file or folder
+      description: Delete a file or folder from the workspace
+      operationId: deleteFile
+      parameters:
+        - name: workspaceId
+          in: path
+          required: true
+          description: Workspace ID
+          schema:
+            type: string
+            format: uuid
+        - name: filePath
+          in: path
+          required: true
+          description: File path (URL encoded)
+          schema:
+            type: string
+      responses:
+        '200':
+          description: File or folder deleted successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  path:
+                    type: string
+        '404':
+          description: File not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /files/rename/{workspaceId}:
+    post:
+      tags: [Files]
+      summary: Rename file or folder
+      description: Rename or move a file or folder within the workspace
+      operationId: renameFile
+      parameters:
+        - name: workspaceId
+          in: path
+          required: true
+          description: Workspace ID
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FileRename'
+      responses:
+        '200':
+          description: File renamed successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  oldPath:
+                    type: string
+                  newPath:
+                    type: string
+        '404':
+          description: File not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /templates/list:
+    get:
+      tags: [Templates]
+      summary: List available templates
+      description: Get all available project templates
+      operationId: listTemplates
+      responses:
+        '200':
+          description: List of templates
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Template'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /templates/create/{templateId}:
+    post:
+      tags: [Templates]
+      summary: Create project from template
+      description: Create a new project based on a template
+      operationId: createFromTemplate
+      parameters:
+        - name: templateId
+          in: path
+          required: true
+          description: Template ID to use
+          schema:
+            type: string
+            enum: [express-basic, express-api, nodejs-cli]
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TemplateCreate'
+      responses:
+        '200':
+          description: Project created from template successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ImportResponse'
+                  - type: object
+                    properties:
+                      template:
+                        type: string
+                        description: Template used
+        '404':
+          description: Template not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
