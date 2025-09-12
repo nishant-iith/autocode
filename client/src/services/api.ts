@@ -18,7 +18,7 @@ export const api = {
   // Projects
   async getProjects(): Promise<Project[]> {
     const response = await apiClient.get('/projects/list');
-    return response.data.map((project: any) => ({
+    return response.data.map((project: Project) => ({
       ...project,
       created: new Date(project.created),
       modified: new Date(project.modified),

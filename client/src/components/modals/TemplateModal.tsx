@@ -58,13 +58,12 @@ const TemplateModal: React.FC<TemplateModalProps> = ({ onClose, onSuccess }) => 
 
     setIsCreating(true);
     try {
-      const workspaceId = await createFromTemplate(selectedTemplate, projectName.trim() || undefined);
+      const result = await createFromTemplate(selectedTemplate, projectName.trim() || undefined);
       
-      const template = templates.find(t => t.id === selectedTemplate);
       const newProject = {
-        workspaceId,
-        name: projectName.trim() || template?.name || 'New Project',
-        description: template?.description,
+        workspaceId: result.workspaceId,
+        name: result.name,
+        description: templates.find(t => t.id === selectedTemplate)?.description,
         created: new Date(),
         modified: new Date(),
       };
@@ -80,7 +79,7 @@ const TemplateModal: React.FC<TemplateModalProps> = ({ onClose, onSuccess }) => 
 
   if (isLoading) {
     return (
-      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
         <div className="bg-vscode-panel border border-vscode-border rounded-lg p-6">
           <div className="flex items-center space-x-3">
             <Loader className="animate-spin" size={20} />
@@ -92,7 +91,7 @@ const TemplateModal: React.FC<TemplateModalProps> = ({ onClose, onSuccess }) => 
   }
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
       <div className="bg-vscode-panel border border-vscode-border rounded-lg p-6 w-full max-w-2xl max-h-[80vh] overflow-auto">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-lg font-semibold text-vscode-text">Create from Template</h2>

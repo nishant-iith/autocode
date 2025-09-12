@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Upload, Github, FolderOpen, Code, Zap } from 'lucide-react';
+import { Plus, Upload, FolderOpen, Code, Zap } from 'lucide-react';
 import { useProjectStore } from '../store/projectStore';
 import CreateProjectModal from './modals/CreateProjectModal';
 import ImportModal from './modals/ImportModal';
@@ -18,8 +18,8 @@ const Welcome: React.FC = () => {
   const recentProjects = projects.slice(0, 5);
 
   return (
-    <div className="h-full bg-vscode-editor flex items-center justify-center">
-      <div className="max-w-3xl mx-auto p-6 text-center">
+    <div className="h-full bg-vscode-editor flex items-center justify-center overflow-auto">
+      <div className="max-w-3xl mx-auto p-4 sm:p-6 text-center w-full">
         <div className="mb-8">
           <div className="flex items-center justify-center mb-4">
             <Code size={32} className="text-vscode-accent mr-3" />
@@ -33,7 +33,7 @@ const Welcome: React.FC = () => {
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
           <button
             onClick={() => setShowCreateModal(true)}
             className="p-4 bg-vscode-panel border border-vscode-border rounded-lg hover:bg-vscode-border transition-colors text-left group"
@@ -119,7 +119,7 @@ const Welcome: React.FC = () => {
         )}
 
         <div className="mt-6 pt-4 border-t border-vscode-border">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-xs text-vscode-text-muted">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 text-xs text-vscode-text-muted">
             <div>
               <strong className="text-vscode-text text-xs">Features:</strong>
               <ul className="mt-1 space-y-1">

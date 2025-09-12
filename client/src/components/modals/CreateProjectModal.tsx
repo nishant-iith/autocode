@@ -11,7 +11,7 @@ const CreateProjectModal: React.FC<CreateProjectModalProps> = ({ onClose, onSucc
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [isCreating, setIsCreating] = useState(false);
-  const { createProject, setCurrentProject, projects } = useProjectStore();
+  const { createProject, setCurrentProject } = useProjectStore();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -19,12 +19,12 @@ const CreateProjectModal: React.FC<CreateProjectModalProps> = ({ onClose, onSucc
 
     setIsCreating(true);
     try {
-      const workspaceId = await createProject(name.trim(), description.trim() || undefined);
+      const result = await createProject(name.trim(), description.trim() || undefined);
       
       const newProject = {
-        workspaceId,
-        name: name.trim(),
-        description: description.trim() || undefined,
+        workspaceId: result.workspaceId,
+        name: result.name,
+        description: result.description,
         created: new Date(),
         modified: new Date(),
       };
@@ -39,8 +39,8 @@ const CreateProjectModal: React.FC<CreateProjectModalProps> = ({ onClose, onSucc
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-vscode-panel border border-vscode-border rounded-lg p-6 w-full max-w-md">
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+      <div className="bg-vscode-panel border border-vscode-border rounded-lg p-6 w-full max-w-md mx-auto">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-lg font-semibold text-vscode-text">Create New Project</h2>
           <button

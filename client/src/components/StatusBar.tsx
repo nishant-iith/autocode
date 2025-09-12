@@ -43,71 +43,76 @@ const StatusBar: React.FC<StatusBarProps> = () => {
   };
 
   return (
-    <div className="h-6 bg-vscode-accent text-white flex items-center justify-between px-3 text-xs">
-      <div className="flex items-center space-x-4">
+    <div className="h-6 bg-vscode-accent text-white flex items-center justify-between px-2 sm:px-3 text-xs overflow-hidden">
+      <div className="flex items-center space-x-2 sm:space-x-4 min-w-0">
         {currentProject && (
           <>
-            <div className="flex items-center space-x-1">
+            <div className="flex items-center space-x-1 min-w-0">
               <GitBranch size={12} />
-              <span>{currentProject.name}</span>
+              <span className="truncate">{currentProject.name}</span>
             </div>
-            <div className="w-px h-4 bg-white bg-opacity-30" />
+            <div className="w-px h-4 bg-white bg-opacity-30 hidden sm:block" />
           </>
         )}
         
         <div className="flex items-center space-x-1">
           <CheckCircle size={12} />
-          <span>AutoCode Ready</span>
+          <span className="hidden sm:inline">AutoCode Ready</span>
+          <span className="sm:hidden">Ready</span>
         </div>
         
-        <div className="w-px h-4 bg-white bg-opacity-30" />
+        <div className="w-px h-4 bg-white bg-opacity-30 hidden sm:block" />
         
         {/* Autosave Status */}
         <div className="flex items-center space-x-1">
           {isSaving ? (
             <>
               <div className="w-3 h-3 border border-white border-t-transparent rounded-full animate-spin"></div>
-              <span>Saving...</span>
+              <span className="hidden sm:inline">Saving...</span>
             </>
           ) : autosaveEnabled ? (
             <>
               <Save size={12} />
-              <span>Autosave: {autosaveDelay / 1000}s</span>
+              <span className="hidden sm:inline">Autosave: {autosaveDelay / 1000}s</span>
+              <span className="sm:hidden">{autosaveDelay / 1000}s</span>
             </>
           ) : (
             <>
               <Clock size={12} />
-              <span>Manual save</span>
+              <span className="hidden sm:inline">Manual save</span>
+              <span className="sm:hidden">Manual</span>
             </>
           )}
         </div>
       </div>
 
-      <div className="flex items-center space-x-4">
+      <div className="flex items-center space-x-2 sm:space-x-4 min-w-0">
         {activeFile && fileInfo && (
           <>
-            <span>{fileInfo.ext}</span>
-            <div className="w-px h-4 bg-white bg-opacity-30" />
-            <span>Lines: {fileInfo.lines}</span>
-            <div className="w-px h-4 bg-white bg-opacity-30" />
-            <span>Chars: {fileInfo.chars}</span>
-            <div className="w-px h-4 bg-white bg-opacity-30" />
-            <span>{activeFile.name}</span>
+            <span className="hidden md:inline">{fileInfo.ext}</span>
+            <div className="w-px h-4 bg-white bg-opacity-30 hidden md:block" />
+            <span className="hidden lg:inline">Lines: {fileInfo.lines}</span>
+            <span className="lg:hidden hidden sm:inline">{fileInfo.lines}L</span>
+            <div className="w-px h-4 bg-white bg-opacity-30 hidden sm:block" />
+            <span className="hidden lg:inline">Chars: {fileInfo.chars}</span>
+            <span className="lg:hidden hidden sm:inline">{fileInfo.chars}C</span>
+            <div className="w-px h-4 bg-white bg-opacity-30 hidden sm:block" />
+            <span className="truncate max-w-32 sm:max-w-none">{activeFile.name}</span>
             
             {/* Show last saved time */}
             {activeFile.path && lastSaved[activeFile.path] && (
               <>
-                <div className="w-px h-4 bg-white bg-opacity-30" />
-                <span>{formatLastSaved(lastSaved[activeFile.path])}</span>
+                <div className="w-px h-4 bg-white bg-opacity-30 hidden sm:block" />
+                <span className="hidden sm:inline">{formatLastSaved(lastSaved[activeFile.path])}</span>
               </>
             )}
             
             {activeFile.isDirty && !isSaving && (
               <>
-                <div className="w-px h-4 bg-white bg-opacity-30" />
+                <div className="w-px h-4 bg-white bg-opacity-30 hidden sm:block" />
                 <div className="flex items-center space-x-1">
                   <AlertCircle size={12} />
-                  <span>Unsaved</span>
+                  <span className="hidden sm:inline">Unsaved</span>
                 </div>
               </>
             )}

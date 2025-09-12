@@ -97,7 +97,7 @@ const ImportModal: React.FC<ImportModalProps> = ({ onClose, onSuccess }) => {
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
       <div className="bg-vscode-panel border border-vscode-border rounded-lg w-full max-w-lg">
         <div className="flex items-center justify-between p-6 border-b border-vscode-border">
           <h2 className="text-lg font-semibold text-vscode-text">Import Project</h2>

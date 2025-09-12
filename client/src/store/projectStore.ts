@@ -31,10 +31,10 @@ interface ProjectState {
   setCurrentProject: (project: Project | null) => void;
   loadFileTree: () => Promise<void>;
   loadProjects: () => Promise<void>;
-  createProject: (name: string, description?: string) => Promise<string>;
-  createFromTemplate: (templateId: string, name?: string) => Promise<string>;
-  importFromZip: (zipFile: File) => Promise<string>;
-  importFromGithub: (repoUrl: string, accessToken?: string) => Promise<string>;
+  createProject: (name: string, description?: string) => Promise<{ workspaceId: string; name: string; description?: string }>;
+  createFromTemplate: (templateId: string, name?: string) => Promise<{ workspaceId: string; name: string }>;
+  importFromZip: (zipFile: File) => Promise<{ workspaceId: string; name: string }>;
+  importFromGithub: (repoUrl: string, accessToken?: string) => Promise<{ workspaceId: string; name: string }>;
   deleteProject: (workspaceId: string) => Promise<void>;
   toggleFolder: (path: string) => void;
   refreshFileTree: () => Promise<void>;
@@ -89,7 +89,7 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
       const project = await api.createProject(name, description);
       await get().loadProjects();
       set({ isLoading: false });
-      return project.workspaceId;
+      return project;
     } catch (error) {
       set({ 
         error: error instanceof Error ? error.message : 'Failed to create project',
@@ -105,7 +105,7 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
       const project = await api.createFromTemplate(templateId, name);
       await get().loadProjects();
       set({ isLoading: false });
-      return project.workspaceId;
+      return project;
     } catch (error) {
       set({ 
         error: error instanceof Error ? error.message : 'Failed to create from template',
@@ -121,7 +121,7 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
       const project = await api.importZip(zipFile);
       await get().loadProjects();
       set({ isLoading: false });
-      return project.workspaceId;
+      return project;
     } catch (error) {
       set({ 
         error: error instanceof Error ? error.message : 'Failed to import ZIP',
@@ -137,7 +137,7 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
       const project = await api.importGithub(repoUrl, accessToken);
       await get().loadProjects();
       set({ isLoading: false });
-      return project.workspaceId;
+      return project;
     } catch (error) {
       set({ 
         error: error instanceof Error ? error.message : 'Failed to import from GitHub',

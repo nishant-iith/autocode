@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Plus, Upload, Github, Trash2, FolderOpen, Calendar } from 'lucide-react';
+import { Plus, Upload, Trash2, FolderOpen, Calendar } from 'lucide-react';
 import { useProjectStore } from '../store/projectStore';
 import CreateProjectModal from './modals/CreateProjectModal';
 import ImportModal from './modals/ImportModal';

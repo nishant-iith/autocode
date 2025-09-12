@@ -20,7 +20,7 @@ export const useAutosave = (options: UseAutosaveOptions = {}) => {
   
   const { currentProject } = useProjectStore();
   
-  const timeoutRef = useRef<NodeJS.Timeout>();
+  const timeoutRef = useRef<number>();
   const pendingSaveRef = useRef<{ path: string; content: string } | null>(null);
   
   const enabled = options.enabled ?? autosaveEnabled;

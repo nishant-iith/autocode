@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Search, File, Folder, Settings, Save, Palette, Type, Eye, EyeOff, Clock } from 'lucide-react';
+import { Search, Settings, Save, Palette, Type, Eye, EyeOff, Clock } from 'lucide-react';
 import { useEditorStore } from '../store/editorStore';
 import { useProjectStore } from '../store/projectStore';
 
@@ -32,11 +32,9 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({ onClose, onOpenSettings
     toggleMinimap,
     minimap,
     setTheme,
-    theme,
     toggleAutosave,
     autosaveEnabled,
     setAutosaveDelay,
-    autosaveDelay,
   } = useEditorStore();
   
   const { currentProject } = useProjectStore();
@@ -256,7 +254,7 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({ onClose, onOpenSettings
                 <div className="px-4 py-2 text-xs font-medium text-vscode-text-muted uppercase tracking-wider bg-vscode-bg">
                   {group}
                 </div>
-                {commands.map((command, index) => {
+                {commands.map((command) => {
                   const globalIndex = filteredCommands.indexOf(command);
                   return (
                     <div

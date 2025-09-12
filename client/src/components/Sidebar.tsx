@@ -20,7 +20,7 @@ const Sidebar: React.FC<SidebarProps> = ({ onOpenSettings }) => {
 
   return (
     <div className="flex h-full">
-      <div className="w-12 bg-vscode-panel border-r border-vscode-border flex flex-col">
+      <div className="w-12 bg-vscode-panel border-r border-vscode-border flex flex-col flex-shrink-0">
         {tabs.map((tab) => (
           <button
             key={tab.id}
@@ -45,7 +45,7 @@ const Sidebar: React.FC<SidebarProps> = ({ onOpenSettings }) => {
         </div>
       </div>
 
-      <div className="w-64 bg-vscode-sidebar border-r border-vscode-border">
+      <div className="w-64 sm:w-64 lg:w-72 xl:w-80 bg-vscode-sidebar border-r border-vscode-border flex-shrink-0 overflow-hidden">
         {activeTab === 'files' && (
           <div className="h-full">
             <div className="p-3 border-b border-vscode-border">

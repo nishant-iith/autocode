@@ -5,7 +5,6 @@ import {
   File, 
   Folder, 
   FolderOpen,
-  Plus,
   Trash2,
   Edit3,
   MoreHorizontal,

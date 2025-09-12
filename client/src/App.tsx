@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useEditorStore } from './store/editorStore';
 import { useProjectStore } from './store/projectStore';
 import Sidebar from './components/Sidebar';

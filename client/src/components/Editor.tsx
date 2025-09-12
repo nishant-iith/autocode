@@ -1,12 +1,13 @@
 import React, { useRef, useEffect } from 'react';
 import { Editor as MonacoEditor } from '@monaco-editor/react';
+import { editor } from 'monaco-editor';
 import { useEditorStore } from '../store/editorStore';
 import { useProjectStore } from '../store/projectStore';
 import { api } from '../services/api';
 import { useAutosave } from '../hooks/useAutosave';
 
 const Editor: React.FC = () => {
-  const editorRef = useRef<any>(null);
+  const editorRef = useRef<editor.IStandaloneCodeEditor | null>(null);
   const {
     activeFile,
     updateFileContent,
@@ -19,8 +20,8 @@ const Editor: React.FC = () => {
   const { currentProject } = useProjectStore();
   const { scheduleAutosave, forceSave, isSaving } = useAutosave();
 
-  const handleEditorDidMount = (editor: any, monaco: any) => {
-    editorRef.current = editor;
+  const handleEditorDidMount = (editorInstance: editor.IStandaloneCodeEditor, monaco: typeof import('monaco-editor')) => {
+    editorRef.current = editorInstance;
 
     // Configure Monaco editor
     monaco.editor.defineTheme('vscode-dark-custom', {
@@ -57,12 +58,12 @@ const Editor: React.FC = () => {
     monaco.editor.setTheme('vscode-dark-custom');
 
     // Add keyboard shortcuts
-    editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyS, () => {
+    editorInstance.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyS, () => {
       handleSave();
     });
 
     // Configure editor options
-    editor.updateOptions({
+    editorInstance.updateOptions({
       fontFamily: 'JetBrains Mono, Consolas, Monaco, Courier New, monospace',
       fontSize: fontSize,
       wordWrap: wordWrap ? 'on' : 'off',
@@ -163,7 +164,6 @@ const Editor: React.FC = () => {
           unfoldOnClickAfterEndOfLine: false,
           colorDecorators: true,
           codeLens: false,
-          lightbulb: { enabled: true },
         }}
       />
       
