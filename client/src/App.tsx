@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useEditorStore } from './store/editorStore';
 import { useProjectStore } from './store/projectStore';
+import { useChatStore } from './store/chatStore';
 import Sidebar from './components/Sidebar';
 import Editor from './components/Editor';
 import TabBar from './components/TabBar';
@@ -8,6 +9,7 @@ import Welcome from './components/Welcome';
 import StatusBar from './components/StatusBar';
 import CommandPalette from './components/CommandPalette';
 import SettingsModal from './components/modals/SettingsModal';
+import ChatBot from './components/ChatBot';
 import { useHotkeys } from 'react-hotkeys-hook';
 
 function App() {
@@ -15,12 +17,17 @@ function App() {
   const [showSettings, setShowSettings] = useState(false);
   const { activeFile, openTabs } = useEditorStore();
   const { currentProject } = useProjectStore();
+  const { isOpen: isChatOpen, toggleChat, closeChat } = useChatStore();
 
   useHotkeys('ctrl+shift+p', () => setShowCommandPalette(true), { preventDefault: true });
   useHotkeys('ctrl+comma', () => setShowSettings(true), { preventDefault: true });
+  useHotkeys('ctrl+shift+c', () => toggleChat(), { preventDefault: true });
   useHotkeys('escape', () => {
     setShowCommandPalette(false);
     setShowSettings(false);
+    if (isChatOpen) {
+      closeChat();
+    }
   });
 
   return (
@@ -53,6 +60,8 @@ function App() {
       {showSettings && (
         <SettingsModal onClose={() => setShowSettings(false)} />
       )}
+      
+      <ChatBot />
     </div>
   );
 }

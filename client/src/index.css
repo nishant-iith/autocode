@@ -7,12 +7,20 @@
     box-sizing: border-box;
   }
   
-  html, body {
+  html {
+    font-size: 14px;
+    scroll-behavior: smooth;
+  }
+  
+  body {
     margin: 0;
     padding: 0;
     height: 100%;
     overflow: hidden;
     font-family: 'JetBrains Mono', 'Consolas', 'Monaco', 'Courier New', monospace;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
   }
   
   #root {
@@ -20,18 +28,36 @@
     width: 100vw;
     background-color: #1e1e1e;
     color: #cccccc;
+    will-change: transform;
+  }
+  
+  /* Performance optimizations */
+  * {
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
+  }
+  
+  /* Improved text selection */
+  ::selection {
+    background-color: #264f78;
+    color: #ffffff;
+  }
+  
+  ::-moz-selection {
+    background-color: #264f78;
+    color: #ffffff;
   }
 }
 
 @layer components {
   .vscode-scrollbar {
     scrollbar-width: thin;
-    scrollbar-color: #424242 transparent;
+    scrollbar-color: #525252 transparent;
   }
   
   .vscode-scrollbar::-webkit-scrollbar {
-    width: 10px;
-    height: 10px;
+    width: 8px;
+    height: 8px;
   }
   
   .vscode-scrollbar::-webkit-scrollbar-track {
@@ -39,13 +65,208 @@
   }
   
   .vscode-scrollbar::-webkit-scrollbar-thumb {
-    background-color: #424242;
-    border-radius: 5px;
-    border: 2px solid transparent;
+    background-color: #525252;
+    border-radius: 4px;
+    border: 1px solid transparent;
     background-clip: content-box;
+    transition: background-color 0.2s ease;
   }
   
   .vscode-scrollbar::-webkit-scrollbar-thumb:hover {
-    background-color: #4f4f4f;
+    background-color: #6b7280;
+  }
+  
+  .vscode-scrollbar::-webkit-scrollbar-thumb:active {
+    background-color: #9ca3af;
+  }
+  
+  /* Smooth animations */
+  .animate-in {
+    animation-fill-mode: both;
+  }
+  
+  .slide-in-from-top-1 {
+    animation: slideInFromTop 0.2s ease-out;
+  }
+  
+  .slide-in-from-right-2 {
+    animation: slideInFromRight 0.15s ease-out;
+  }
+  
+  .slide-in-from-bottom-2 {
+    animation: slideInFromBottom 0.3s ease-out;
+  }
+  
+  .slide-in-from-top-2 {
+    animation: slideInFromTop 0.3s ease-out;
+  }
+  
+  .slide-in-from-left-1 {
+    animation: slideInFromLeft 0.2s ease-out;
+  }
+  
+  .slide-in-from-left-2 {
+    animation: slideInFromLeft 0.3s ease-out;
+  }
+  
+  .fade-in {
+    animation: fadeIn 0.2s ease-out;
+  }
+  
+  /* Loading animations */
+  .pulse-slow {
+    animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  }
+  
+  .shimmer {
+    animation: shimmer 1.5s infinite;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent);
+    background-size: 200% 100%;
+  }
+  
+  /* Hover effects */
+  .hover-lift {
+    transition: transform 0.2s ease-out;
+  }
+  
+  .hover-lift:hover {
+    transform: translateY(-1px);
+  }
+  
+  .hover-scale {
+    transition: transform 0.15s ease-out;
+  }
+  
+  .hover-scale:hover {
+    transform: scale(1.02);
+  }
+  
+  .hover-glow {
+    transition: box-shadow 0.2s ease-out;
+  }
+  
+  .hover-glow:hover {
+    box-shadow: 0 0 0 1px rgba(59, 130, 246, 0.3);
+  }
+}
+
+@keyframes slideInFromTop {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideInFromRight {
+  from {
+    opacity: 0;
+    transform: translateX(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes slideInFromBottom {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideInFromLeft {
+  from {
+    opacity: 0;
+    transform: translateX(-16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+/* Enhanced focus styles */
+*:focus-visible {
+  outline: 2px solid #3b82f6;
+  outline-offset: 1px;
+  border-radius: 2px;
+}
+
+/* Better button styles */
+button {
+  transition: all 0.15s ease-out;
+}
+
+button:active {
+  transform: scale(0.98);
+}
+
+/* Enhanced input styles */
+input {
+  transition: all 0.2s ease-out;
+}
+
+input:focus {
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+}
+
+/* Improved tab styles */
+.tab-active {
+  position: relative;
+}
+
+.tab-active::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: #3b82f6;
+  animation: slideIn 0.2s ease-out;
+}
+
+@keyframes slideIn {
+  from {
+    width: 0;
+  }
+  to {
+    width: 100%;
   }
 }
