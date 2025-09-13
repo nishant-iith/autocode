@@ -14,6 +14,7 @@ import CommandPalette from './components/CommandPalette';
 import SettingsModal from './components/modals/SettingsModal';
 import ChatBot from './components/ChatBot';
 import { useHotkeys } from 'react-hotkeys-hook';
+import { MessageCircle } from 'lucide-react';
 
 function App() {
   const [showCommandPalette, setShowCommandPalette] = useState(false);
@@ -163,6 +164,20 @@ function App() {
       
       {showSettings && (
         <SettingsModal onClose={() => setShowSettings(false)} />
+      )}
+
+      {/* Floating Chat Button - Only show when chat is closed */}
+      {!isChatOpen && (
+        <button
+          onClick={toggleChat}
+          className="fixed bottom-6 right-6 w-14 h-14 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white rounded-full shadow-lg hover:shadow-xl transition-all duration-300 flex items-center justify-center group z-50"
+          title="Open Chat (Ctrl+Shift+C)"
+        >
+          <MessageCircle size={24} className="group-hover:scale-110 transition-transform duration-200" />
+          
+          {/* Pulse animation */}
+          <div className="absolute inset-0 rounded-full bg-gradient-to-r from-blue-500 to-purple-600 animate-ping opacity-20"></div>
+        </button>
       )}
     </div>
   );
