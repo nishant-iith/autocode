@@ -1,4 +1,5 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useMemo } from 'react';
+import { throttle } from './utils/throttle';
 import { useEditorStore } from './store/editorStore';
 import { useProjectStore } from './store/projectStore';
 import { useChatStore } from './store/chatStore';
@@ -7,6 +8,7 @@ import Sidebar from './components/Sidebar';
 import Editor from './components/Editor';
 import TabBar from './components/TabBar';
 import Welcome from './components/Welcome';
+import Preview from './components/Preview';
 import StatusBar from './components/StatusBar';
 import CommandPalette from './components/CommandPalette';
 import SettingsModal from './components/modals/SettingsModal';
@@ -19,7 +21,7 @@ function App() {
   const { activeFile, openTabs } = useEditorStore();
   const { currentProject } = useProjectStore();
   const { isOpen: isChatOpen, width: chatWidth, toggleChat, setWidth: setChatWidth } = useChatStore();
-  const { toggleSidebar } = useSidebarStore();
+  const { toggleSidebar, activeTab } = useSidebarStore();
   
   const [isResizingChat, setIsResizingChat] = useState(false);
   const MIN_CHAT_WIDTH = 300;
@@ -55,14 +57,19 @@ function App() {
     setIsResizingChat(true);
   }, []);
 
+  const throttledSetChatWidth = useMemo(
+    () => throttle((width: number) => setChatWidth(width), 16), // ~60fps
+    [setChatWidth]
+  );
+
   const handleChatResizeMouseMove = useCallback((e: MouseEvent) => {
     if (!isResizingChat) return;
     
     const newWidth = window.innerWidth - e.clientX;
     if (newWidth >= MIN_CHAT_WIDTH && newWidth <= MAX_CHAT_WIDTH) {
-      setChatWidth(newWidth);
+      throttledSetChatWidth(newWidth);
     }
-  }, [isResizingChat, setChatWidth, MIN_CHAT_WIDTH, MAX_CHAT_WIDTH]);
+  }, [isResizingChat, throttledSetChatWidth, MIN_CHAT_WIDTH, MAX_CHAT_WIDTH]);
 
   const handleChatResizeMouseUp = useCallback(() => {
     setIsResizingChat(false);
@@ -101,7 +108,9 @@ function App() {
               {openTabs.length > 0 && <TabBar />}
               
               <div className="flex-1 relative">
-                {currentProject && activeFile ? (
+                {activeTab === 'preview' ? (
+                  <Preview />
+                ) : currentProject && activeFile ? (
                   <Editor />
                 ) : (
                   <Welcome />

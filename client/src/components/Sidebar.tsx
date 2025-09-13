@@ -1,5 +1,6 @@
-import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { Files, Search, Settings, FolderOpen } from 'lucide-react';
+import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
+import { Files, Search, Settings, FolderOpen, Eye } from 'lucide-react';
+import { throttle } from '../utils/throttle';
 import FileTree from './FileTree';
 import ProjectList from './ProjectList';
 import { useProjectStore } from '../store/projectStore';
@@ -24,14 +25,19 @@ const Sidebar: React.FC<SidebarProps> = ({ onOpenSettings }) => {
     setIsResizing(true);
   }, []);
 
+  const throttledSetWidth = useMemo(
+    () => throttle((width: number) => setWidth(width), 16), // ~60fps
+    [setWidth]
+  );
+
   const handleMouseMove = useCallback((e: MouseEvent) => {
     if (!isResizing) return;
     
     const newWidth = e.clientX - 48; // 48px is the icon bar width
     if (newWidth >= MIN_WIDTH && newWidth <= MAX_WIDTH) {
-      setWidth(newWidth);
+      throttledSetWidth(newWidth);
     }
-  }, [isResizing, setWidth, MIN_WIDTH, MAX_WIDTH]);
+  }, [isResizing, throttledSetWidth, MIN_WIDTH, MAX_WIDTH]);
 
   const handleMouseUp = useCallback(() => {
     setIsResizing(false);
@@ -57,6 +63,7 @@ const Sidebar: React.FC<SidebarProps> = ({ onOpenSettings }) => {
     { id: 'files' as const, icon: Files, label: 'Files' },
     { id: 'search' as const, icon: Search, label: 'Search' },
     { id: 'projects' as const, icon: FolderOpen, label: 'Projects' },
+    { id: 'preview' as const, icon: Eye, label: 'Preview' },
   ];
 
   return (
@@ -99,7 +106,7 @@ const Sidebar: React.FC<SidebarProps> = ({ onOpenSettings }) => {
         </div>
       </div>
 
-      {!isCollapsed && activeTab && (
+      {!isCollapsed && activeTab && activeTab !== 'preview' && (
         <div 
           ref={sidebarRef}
           className="bg-vscode-sidebar border-r border-vscode-border flex-shrink-0 overflow-hidden relative transition-all duration-200 ease-in-out"
@@ -168,6 +175,7 @@ const Sidebar: React.FC<SidebarProps> = ({ onOpenSettings }) => {
           </div>
         )}
 
+
         {/* Resize Handle */}
         <div
           className={`absolute top-0 right-0 w-1 h-full cursor-col-resize bg-transparent hover:bg-blue-400/20 transition-all duration-200 group ${
@@ -186,7 +194,7 @@ const Sidebar: React.FC<SidebarProps> = ({ onOpenSettings }) => {
       )}
 
       {/* Collapse/Expand indicator */}
-      {isCollapsed && activeTab && (
+      {isCollapsed && activeTab && activeTab !== 'preview' && (
         <div className="w-0.5 bg-blue-400 h-full animate-in slide-in-from-right-1 duration-200" />
       )}
     </div>

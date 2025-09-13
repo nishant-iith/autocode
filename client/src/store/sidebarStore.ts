@@ -4,11 +4,11 @@ import { persist } from 'zustand/middleware';
 interface SidebarState {
   isCollapsed: boolean;
   width: number;
-  activeTab: 'files' | 'search' | 'projects' | null;
+  activeTab: 'files' | 'search' | 'projects' | 'preview' | null;
   
   // Actions
   toggleSidebar: () => void;
-  setActiveTab: (tab: 'files' | 'search' | 'projects' | null) => void;
+  setActiveTab: (tab: 'files' | 'search' | 'projects' | 'preview' | null) => void;
   setWidth: (width: number) => void;
   setCollapsed: (collapsed: boolean) => void;
 }

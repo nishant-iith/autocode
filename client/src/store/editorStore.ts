@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { persist } from 'zustand/middleware';
 
 export interface FileTab {
   id: string;
@@ -73,7 +74,9 @@ const getLanguageFromPath = (path: string): string => {
   return languageMap[ext || ''] || 'plaintext';
 };
 
-export const useEditorStore = create<EditorState>((set, get) => ({
+export const useEditorStore = create<EditorState>()(
+  persist(
+    (set, get) => ({
   activeFile: null,
   openTabs: [],
   theme: 'dark',
@@ -212,4 +215,15 @@ export const useEditorStore = create<EditorState>((set, get) => ({
       [path]: new Date()
     }
   })),
-}));
+}), {
+  name: 'editor-settings',
+  partialize: (state) => ({
+    theme: state.theme,
+    fontSize: state.fontSize,
+    wordWrap: state.wordWrap,
+    minimap: state.minimap,
+    autosaveEnabled: state.autosaveEnabled,
+    autosaveDelay: state.autosaveDelay,
+  }),
+})
+);

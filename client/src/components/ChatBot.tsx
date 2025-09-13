@@ -52,10 +52,6 @@ const ChatBot: React.FC = () => {
   const { activeFile } = useEditorStore();
   const { currentProject, fileTree } = useProjectStore();
 
-  // Debug: Check if sendMessageWithContext is available
-  React.useEffect(() => {
-    console.log('sendMessageWithContext function:', typeof sendMessageWithContext);
-  }, [sendMessageWithContext]);
 
   const [inputMessage, setInputMessage] = useState('');
   const [apiKeyInput, setApiKeyInput] = useState('');
@@ -102,86 +98,58 @@ const ChatBot: React.FC = () => {
   };
 
   const handleSendWithContext = async (contextType: 'file' | 'project' | 'structure') => {
-    console.log('handleSendWithContext called with:', contextType);
-    console.log('activeFile:', activeFile?.name || 'null');
-    console.log('currentProject:', currentProject?.name || 'null');
-    console.log('inputMessage:', inputMessage);
-    console.log('isTyping:', isTyping);
-    
     if (!inputMessage.trim()) {
-      console.log('No input message, returning');
       setError('Please enter a message first');
       return;
     }
     
-    if (isTyping) {
-      console.log('Currently typing, returning');
-      return;
-    }
+    if (isTyping) return;
 
     let context = '';
     
-    if (contextType === 'file') {
-      if (activeFile) {
-        context = `File: ${activeFile.name}\n\nContent:\n${activeFile.content}`;
-        console.log('Generated file context, length:', context.length);
-      } else {
-        console.log('No active file available');
-        context = 'No file currently open in editor';
-      }
-    } else if (contextType === 'project') {
-      if (currentProject) {
-        const flattenFiles = (nodes: FileNode[], prefix = ''): string[] => {
-          return nodes.flatMap((node: FileNode) => {
-            const fullPath = prefix + node.name;
-            if (node.type === 'file') {
-              return [`${fullPath}: [File]`];
-            } else {
-              const childFiles = node.children ? flattenFiles(node.children, fullPath + '/') : [];
-              return [`${fullPath}: [Directory]`, ...childFiles];
-            }
-          });
-        };
-        const projectFiles = flattenFiles(fileTree).join('\n');
-        context = `Project: ${currentProject.name}\n\nDescription: ${currentProject.description || 'No description'}\n\nFiles:\n${projectFiles}`;
-        console.log('Generated project context, length:', context.length);
-      } else {
-        console.log('No current project available');
-        context = 'No project currently loaded';
-      }
-    } else if (contextType === 'structure') {
-      if (currentProject) {
-        const flattenStructure = (nodes: FileNode[], prefix = ''): string[] => {
-          return nodes.flatMap((node: FileNode) => {
-            const fullPath = prefix + node.name;
-            const icon = node.type === 'file' ? '📄' : '📁';
-            if (node.type === 'folder' && node.children) {
-              return [`${icon} ${fullPath}/`, ...flattenStructure(node.children, fullPath + '/')];
-            }
-            return [`${icon} ${fullPath}`];
-          });
-        };
-        const structure = flattenStructure(fileTree).join('\n');
-        context = `Project Structure for ${currentProject.name}:\n\n${structure}`;
-        console.log('Generated structure context, length:', context.length);
-      } else {
-        console.log('No current project available for structure');
-        context = 'No project structure available';
-      }
+    if (contextType === 'file' && activeFile) {
+      context = `File: ${activeFile.name}\n\nContent:\n${activeFile.content}`;
+    } else if (contextType === 'project' && currentProject) {
+      const flattenFiles = (nodes: FileNode[], prefix = ''): string[] => {
+        return nodes.flatMap((node: FileNode) => {
+          const fullPath = prefix + node.name;
+          if (node.type === 'file') {
+            return [`${fullPath}: [File]`];
+          } else {
+            const childFiles = node.children ? flattenFiles(node.children, fullPath + '/') : [];
+            return [`${fullPath}: [Directory]`, ...childFiles];
+          }
+        });
+      };
+      const projectFiles = flattenFiles(fileTree).join('\n');
+      context = `Project: ${currentProject.name}\n\nDescription: ${currentProject.description || 'No description'}\n\nFiles:\n${projectFiles}`;
+    } else if (contextType === 'structure' && currentProject) {
+      const flattenStructure = (nodes: FileNode[], prefix = ''): string[] => {
+        return nodes.flatMap((node: FileNode) => {
+          const fullPath = prefix + node.name;
+          const icon = node.type === 'file' ? '📄' : '📁';
+          if (node.type === 'folder' && node.children) {
+            return [`${icon} ${fullPath}/`, ...flattenStructure(node.children, fullPath + '/')];
+          }
+          return [`${icon} ${fullPath}`];
+        });
+      };
+      const structure = flattenStructure(fileTree).join('\n');
+      context = `Project Structure for ${currentProject.name}:\n\n${structure}`;
+    }
+
+    if (!context) {
+      setError('No context available for the selected type');
+      return;
     }
 
     const message = inputMessage.trim();
-    console.log('About to send message with context. Message:', message.substring(0, 50) + '...');
-    console.log('Context preview:', context.substring(0, 100) + '...');
-    
     setInputMessage('');
     setShowContextMenu(false);
     
     try {
       await sendMessageWithContext(message, context);
-      console.log('Message sent successfully with context');
     } catch (error) {
-      console.error('Error sending message with context:', error);
       setError('Failed to send message with context');
     }
   };
@@ -547,19 +515,15 @@ const ChatBot: React.FC = () => {
                   </div>
                 </div>
                 
-                {/* Context Menu Button - Always visible for testing */}
-                {true && (
+                {/* Context Menu Button */}
+                {(activeFile || currentProject) && (
                   <div className="relative context-menu-container">
                     <button
                       type="button"
                       onClick={(e) => {
                         e.preventDefault();
                         e.stopPropagation();
-                        console.log('Context button clicked, current showContextMenu:', showContextMenu);
-                        setShowContextMenu(prev => {
-                          console.log('Setting showContextMenu to:', !prev);
-                          return !prev;
-                        });
+                        setShowContextMenu(prev => !prev);
                       }}
                       disabled={isTyping}
                       className="p-3 bg-vscode-border text-vscode-text hover:bg-vscode-panel hover:text-white rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-150 flex items-center justify-center hover-lift shadow-sm"
@@ -571,7 +535,7 @@ const ChatBot: React.FC = () => {
                     {/* Context Dropdown */}
                     {showContextMenu && (
                       <div className="absolute bottom-full right-0 mb-2 bg-vscode-panel border border-vscode-border rounded-lg shadow-lg p-2 min-w-48 z-50 animate-in fade-in slide-in-from-bottom-2 duration-200">
-                        <div className="text-xs text-vscode-text-muted mb-2 px-2">Add context: (Debug: Menu is visible)</div>
+                        <div className="text-xs text-vscode-text-muted mb-2 px-2">Add context:</div>
                         
                         {activeFile && (
                           <button
