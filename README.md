@@ -1,241 +1,216 @@
-# AutoCode - Online VS Code for Node.js
+# AutoCode - Online Code Editor
 
-![AutoCode](https://img.shields.io/badge/AutoCode-Online%20IDE-blue)
-![React](https://img.shields.io/badge/React-18-blue)
-![Express](https://img.shields.io/badge/Express-4-green)
-![Monaco](https://img.shields.io/badge/Monaco%20Editor-Latest-orange)
-
-AutoCode is a powerful online code editor specifically designed for Node.js development. Built with React and Express, it provides a VS Code-like experience in your browser with advanced features for modern JavaScript/TypeScript development.
+AutoCode is a powerful, browser-based code editor built with React and Node.js, featuring an integrated AI assistant (AutoChat) powered by OpenRouter. It provides a professional development environment similar to VS Code but accessible from anywhere.
 
 ## 🚀 Features
 
-### Core Editor
-- **Monaco Editor** - The same editor that powers VS Code
-- **IntelliSense** - Smart code completion and suggestions
-- **Syntax Highlighting** - Support for JavaScript, TypeScript, JSON, HTML, CSS, and more
-- **Multi-tab Interface** - Work on multiple files simultaneously
-- **Auto-save** - Never lose your work
-- **Code Folding** - Collapse and expand code blocks
-- **Minimap** - Navigate large files easily
+### **Core Editor**
+- **Monaco Editor Integration** - Full-featured code editor with syntax highlighting
+- **Multi-tab Interface** - Work with multiple files simultaneously  
+- **File Tree Explorer** - Navigate and manage project files with collapsible sidebar
+- **Resizable Sidebar** - VS Code-like sidebar with drag-to-resize functionality
+- **Auto-save** - Never lose your work with intelligent auto-saving
+- **Syntax Highlighting** - Support for 20+ programming languages
+- **Command Palette** - Quick access to all commands (Ctrl+Shift+P)
 
-### File Management
-- **File Explorer** - Hierarchical file tree with drag-and-drop
-- **File Operations** - Create, delete, rename, and move files/folders
-- **Context Menus** - Right-click actions for files and folders
-- **Real-time Updates** - See changes across all connected clients
+### **Project Management**
+- **Create Projects** - Start new Node.js projects instantly
+- **Import from ZIP** - Upload and extract project archives
+- **Git Repository Import** - Clone projects directly from GitHub
+- **Workspace Management** - Isolated environments for each project
 
-### Project Management
-- **Multiple Projects** - Manage several projects simultaneously
-- **Project Templates** - Start with Express.js, REST API, or CLI templates
-- **Import Options** - Import from ZIP files or GitHub repositories
-- **Project Dashboard** - Overview of all your projects
+### **AI Assistant (AutoChat)**
+- **Separate Panel Design** - Independent right-side panel like Bolt.new and Lovable
+- **Resizable Interface** - Drag to resize from 300px to 800px width
+- **OpenRouter Integration** - Access to multiple AI models
+- **Context-Aware Conversations** - Maintains chat history
+- **Code Assistance** - Get help with debugging, optimization, and learning
+- **Streaming Responses** - Real-time AI responses
+- **Syntax-Highlighted Code Blocks** - Beautiful code formatting in responses
 
-### Developer Experience
-- **Command Palette** (Ctrl+Shift+P) - Quick access to all commands
-- **Keyboard Shortcuts** - Familiar VS Code shortcuts
-- **Themes** - Dark and light themes
-- **Customizable Settings** - Font size, word wrap, minimap toggle
+### **Professional UI/UX**
+- **VS Code Theme** - Familiar dark theme with proper syntax colors
 - **Responsive Design** - Works on desktop, tablet, and mobile
+- **Keyboard Shortcuts** - Full hotkey support for power users
+- **Status Bar** - Real-time feedback and indicators
+- **Modal System** - Clean, accessible dialogs and settings
+
+## 🛠️ Technical Stack
+
+### **Frontend**
+- **React 18** with TypeScript
+- **Vite** for fast development and optimized builds
+- **Tailwind CSS** for styling
+- **Zustand** for state management  
+- **Monaco Editor** (@monaco-editor/react)
+- **React Markdown** with syntax highlighting
+- **Radix UI** for accessible components
+
+### **Backend**
+- **Node.js** with Express
+- **Socket.IO** for real-time communication
+- **Swagger/OpenAPI** documentation
+- **File system operations** with fs-extra
+- **UUID** for secure identifiers
+- **CORS** and security headers
+
+### **Security Features**
+- **Path Traversal Protection** - Secure file access validation
+- **Input Sanitization** - XSS and injection prevention  
+- **File Type Validation** - Only allowed extensions
+- **Size Limits** - Prevent resource exhaustion
+- **Security Headers** - XSS, CSRF, and clickjacking protection
 
 ## 📦 Installation
 
-### Prerequisites
-- Node.js 16+ 
-- npm or yarn
+### **Prerequisites**
+- Node.js 16+ and npm
+- Git (for repository imports)
 
-### Quick Start
-
-1. **Clone the repository**
+### **Quick Start**
 ```bash
-git clone https://github.com/your-username/autocode.git
+# Clone the repository
+git clone <repository-url>
 cd autocode
-```
 
-2. **Install dependencies**
-```bash
+# Install all dependencies
 npm run install:all
-```
 
-3. **Set up environment variables**
-```bash
-cp server/.env.example server/.env
-```
-
-4. **Start the development server**
-```bash
+# Start development servers
 npm run dev
 ```
 
-5. **Open your browser**
-Navigate to `http://localhost:3000`
+### **Individual Services**
+```bash
+# Client only (http://localhost:3000)
+npm run client:dev
 
-## 🏗️ Project Structure
+# Server only (http://localhost:5000)  
+npm run server:dev
 
+# Production build
+npm run build
 ```
-autocode/
-├── client/                 # React frontend
-│   ├── src/
-│   │   ├── components/     # React components
-│   │   ├── store/         # Zustand state management
-│   │   ├── services/      # API services
-│   │   └── styles/        # Tailwind CSS
-│   └── public/
-├── server/                # Express backend
-│   ├── routes/           # API routes
-│   ├── workspaces/       # User project files
-│   └── index.js          # Server entry point
-└── README.md
-```
-
-## 🎯 Available Scripts
-
-### Root Scripts
-- `npm run dev` - Start both client and server in development mode
-- `npm run build` - Build the client for production
-- `npm run start` - Start the production server
-- `npm run install:all` - Install all dependencies
-
-### Client Scripts
-- `npm run dev` - Start Vite development server
-- `npm run build` - Build for production
-- `npm run preview` - Preview production build
-
-### Server Scripts
-- `npm run dev` - Start with nodemon (auto-restart)
-- `npm start` - Start production server
 
 ## 🔧 Configuration
 
-### Environment Variables
-
-Create a `.env` file in the `server` directory:
-
+### **Environment Variables**
+Create a `.env` file in the server directory:
 ```env
 PORT=5000
-NODE_ENV=development
 GITHUB_TOKEN=your_github_token_here
 ```
 
-### Customization
+### **OpenRouter API Key**
+1. Get an API key from [OpenRouter](https://openrouter.ai/)
+2. In AutoCode, click the chat button
+3. Enter your API key in the settings
 
-#### Adding New Templates
-Edit `server/routes/templates.js` to add new project templates:
+## 📖 Usage
 
-```javascript
-const templates = {
-  'your-template': {
-    name: 'Your Template',
-    description: 'Template description',
-    files: {
-      'package.json': { /* package.json content */ },
-      'index.js': 'console.log("Hello World");'
-    }
-  }
-};
+### **Creating a Project**
+1. Click "Create New Project"
+2. Enter project name and description
+3. Start coding immediately
+
+### **Using AutoChat**
+1. Click the chat icon or press Ctrl+Shift+C
+2. Configure your OpenRouter API key
+3. Ask questions about your code, debugging help, or programming concepts
+
+### **Keyboard Shortcuts**
+- `Ctrl+S` - Save current file
+- `Ctrl+Shift+P` - Open command palette
+- `Ctrl+Shift+C` - Toggle AutoChat
+- `Ctrl+B` - Toggle sidebar (collapse/expand)
+- `Ctrl+,` - Open settings
+- `Escape` - Close modals/chat
+
+## 🏗️ Architecture
+
+### **Monorepo Structure**
+```
+autocode/
+├── client/          # React frontend
+├── server/          # Node.js backend  
+├── docs/            # API documentation
+└── package.json     # Root scripts
 ```
 
-#### Adding New Languages
-Monaco Editor supports many languages out of the box. Update the language mapping in `client/src/store/editorStore.ts`:
+### **Key Components**
+- **Editor Store** - File management and editor state
+- **Project Store** - Workspace and project data
+- **Chat Store** - AI conversation management
+- **Security Utils** - Path validation and sanitization
+- **Error Boundary** - Graceful error handling
 
-```javascript
-const languageMap = {
-  'py': 'python',
-  'go': 'go',
-  'rust': 'rust',
-  // Add more extensions
-};
+## 🔒 Security
+
+AutoCode implements enterprise-grade security:
+- **Input validation** on all user inputs
+- **Path traversal prevention** in file operations  
+- **XSS protection** with security headers
+- **File type restrictions** for uploads
+- **Resource limits** to prevent DoS
+- **UUID-based** workspace isolation
+
+## 🚀 Production Deployment
+
+### **Build Process**
+```bash
+npm run build    # Creates optimized production build
 ```
 
-## 🌐 API Endpoints
+### **Environment Setup**
+- Configure CORS origins for your domain
+- Set up proper SSL/TLS certificates
+- Configure reverse proxy (nginx/Apache)
+- Set production environment variables
 
-### Projects
-- `GET /api/projects/list` - Get all projects
-- `POST /api/projects/create` - Create new project
-- `POST /api/projects/import-zip` - Import from ZIP
-- `POST /api/projects/import-github` - Import from GitHub
-- `DELETE /api/projects/:id` - Delete project
-
-### Files
-- `GET /api/files/tree/:workspaceId` - Get file tree
-- `GET /api/files/content/:workspaceId/*` - Get file content
-- `PUT /api/files/content/:workspaceId/*` - Save file content
-- `POST /api/files/create/:workspaceId` - Create file/folder
-- `DELETE /api/files/:workspaceId/*` - Delete file/folder
-
-### Templates
-- `GET /api/templates/list` - Get available templates
-- `POST /api/templates/create/:templateId` - Create from template
-
-## 🎨 Themes and Customization
-
-AutoCode supports both dark and light themes. The dark theme is based on VS Code's default dark theme with custom colors defined in `tailwind.config.js`.
-
-### Custom Colors
-```javascript
-colors: {
-  'vscode': {
-    'bg': '#1e1e1e',
-    'sidebar': '#252526',
-    'editor': '#1e1e1e',
-    'panel': '#181818',
-    'border': '#2d2d30',
-    'text': '#cccccc',
-    'text-muted': '#969696',
-    'accent': '#007acc',
-  }
-}
-```
-
-## 🔌 Extensions and Plugins
-
-AutoCode is built to be extensible. Future versions will support:
-
-- Custom themes
-- Plugin system
-- Additional language servers
-- Git integration
-- Terminal integration
-- Debugging support
+### **Performance**
+- **Code splitting** - Optimized bundle chunks
+- **Tree shaking** - Remove unused code
+- **Gzip compression** - Reduced transfer sizes
+- **Asset optimization** - Minified and compressed
 
 ## 🤝 Contributing
 
-We welcome contributions! Please see our [Contributing Guide](CONTRIBUTING.md) for details.
-
-### Development Setup
-
 1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit changes (`git commit -m 'Add amazing feature'`)  
+4. Push to branch (`git push origin feature/amazing-feature`)
 5. Open a Pull Request
 
-## 📝 License
+## 📝 API Documentation
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+Interactive API documentation is available at:
+- **Development**: http://localhost:5000/api-docs
+- **JSON Spec**: http://localhost:5000/api-docs.json
+
+## 🐛 Troubleshooting
+
+### **Common Issues**
+
+**Monaco Editor not loading**
+- Check browser console for errors
+- Ensure network connection for CDN resources
+
+**File operations failing**
+- Verify workspace permissions
+- Check file path validity
+
+**AutoChat not working**
+- Validate OpenRouter API key
+- Check network connectivity
+- Verify model availability
+
+## 📄 License
+
+MIT License - see LICENSE file for details
 
 ## 🙏 Acknowledgments
 
-- [Monaco Editor](https://microsoft.github.io/monaco-editor/) - The code editor that powers VS Code
-- [React](https://reactjs.org/) - A JavaScript library for building user interfaces
-- [Express.js](https://expressjs.com/) - Fast, unopinionated, minimalist web framework
-- [Tailwind CSS](https://tailwindcss.com/) - A utility-first CSS framework
-- [Zustand](https://github.com/pmndrs/zustand) - A small, fast and scalable bearbones state-management solution
-
-## 🐛 Issues and Support
-
-If you encounter any issues or have questions, please file an issue on our [GitHub Issues](https://github.com/your-username/autocode/issues) page.
-
-## 🗺️ Roadmap
-
-- [ ] Git integration
-- [ ] Terminal/Console integration
-- [ ] Real-time collaboration
-- [ ] Plugin system
-- [ ] Debugging support
-- [ ] Docker integration
-- [ ] Cloud deployment options
-- [ ] Mobile app
-
----
-
-**AutoCode** - Bringing the power of VS Code to your browser for Node.js development! 🚀
+- **Monaco Editor** - Microsoft's excellent web editor
+- **OpenRouter** - AI model access and routing
+- **React Team** - Amazing frontend framework
+- **Vite** - Lightning-fast build tool

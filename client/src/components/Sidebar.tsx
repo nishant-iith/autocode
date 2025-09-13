@@ -1,17 +1,57 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { Files, Search, Settings, FolderOpen } from 'lucide-react';
 import FileTree from './FileTree';
 import ProjectList from './ProjectList';
 import { useProjectStore } from '../store/projectStore';
+import { useSidebarStore } from '../store/sidebarStore';
 
 interface SidebarProps {
   onOpenSettings?: () => void;
 }
 
 const Sidebar: React.FC<SidebarProps> = ({ onOpenSettings }) => {
-  const [activeTab, setActiveTab] = useState<'files' | 'search' | 'projects'>('files');
   const [searchQuery, setSearchQuery] = useState('');
+  const [isResizing, setIsResizing] = useState(false);
+  const sidebarRef = useRef<HTMLDivElement>(null);
   const { currentProject } = useProjectStore();
+  const { activeTab, isCollapsed, width, setActiveTab, setWidth } = useSidebarStore();
+
+  const MIN_WIDTH = 200;
+  const MAX_WIDTH = 600;
+
+  const handleMouseDown = useCallback((e: React.MouseEvent) => {
+    e.preventDefault();
+    setIsResizing(true);
+  }, []);
+
+  const handleMouseMove = useCallback((e: MouseEvent) => {
+    if (!isResizing) return;
+    
+    const newWidth = e.clientX - 48; // 48px is the icon bar width
+    if (newWidth >= MIN_WIDTH && newWidth <= MAX_WIDTH) {
+      setWidth(newWidth);
+    }
+  }, [isResizing, setWidth, MIN_WIDTH, MAX_WIDTH]);
+
+  const handleMouseUp = useCallback(() => {
+    setIsResizing(false);
+  }, []);
+
+  useEffect(() => {
+    if (isResizing) {
+      document.addEventListener('mousemove', handleMouseMove);
+      document.addEventListener('mouseup', handleMouseUp);
+      document.body.style.cursor = 'col-resize';
+      document.body.style.userSelect = 'none';
+    }
+
+    return () => {
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+      document.body.style.cursor = '';
+      document.body.style.userSelect = '';
+    };
+  }, [isResizing, handleMouseMove, handleMouseUp]);
 
   const tabs = [
     { id: 'files' as const, icon: Files, label: 'Files' },
@@ -21,7 +61,7 @@ const Sidebar: React.FC<SidebarProps> = ({ onOpenSettings }) => {
 
   return (
     <div className="flex h-full">
-      <div className="w-12 bg-vscode-panel border-r border-vscode-border flex flex-col flex-shrink-0">
+      <div className="w-12 bg-vscode-panel border-r border-vscode-border flex flex-col flex-shrink-0 rounded-l-xl">
         {tabs.map((tab) => (
           <button
             key={tab.id}
@@ -29,7 +69,7 @@ const Sidebar: React.FC<SidebarProps> = ({ onOpenSettings }) => {
             className={`
               relative p-3 transition-all duration-200 ease-out hover-lift
               ${
-                activeTab === tab.id 
+                activeTab === tab.id && !isCollapsed
                   ? 'bg-vscode-border text-white shadow-sm' 
                   : 'text-vscode-text-muted hover:text-white hover:bg-vscode-border/70'
               }
@@ -39,7 +79,7 @@ const Sidebar: React.FC<SidebarProps> = ({ onOpenSettings }) => {
             <tab.icon 
               size={20} 
               className={`transition-all duration-200 ${
-                activeTab === tab.id ? 'scale-110' : 'hover:scale-105'
+                activeTab === tab.id && !isCollapsed ? 'scale-110' : 'hover:scale-105'
               }`} 
             />
             {activeTab === tab.id && (
@@ -59,7 +99,12 @@ const Sidebar: React.FC<SidebarProps> = ({ onOpenSettings }) => {
         </div>
       </div>
 
-      <div className="w-64 sm:w-64 lg:w-72 xl:w-80 bg-vscode-sidebar border-r border-vscode-border flex-shrink-0 overflow-hidden">
+      {!isCollapsed && activeTab && (
+        <div 
+          ref={sidebarRef}
+          className="bg-vscode-sidebar border-r border-vscode-border flex-shrink-0 overflow-hidden relative transition-all duration-200 ease-in-out"
+          style={{ width }}
+        >
         {activeTab === 'files' && (
           <div className="h-full animate-in fade-in slide-in-from-right-2 duration-300">
             <div className="p-4 border-b border-vscode-border bg-gradient-to-r from-vscode-sidebar to-vscode-panel/50">
@@ -122,7 +167,28 @@ const Sidebar: React.FC<SidebarProps> = ({ onOpenSettings }) => {
             <ProjectList />
           </div>
         )}
-      </div>
+
+        {/* Resize Handle */}
+        <div
+          className={`absolute top-0 right-0 w-1 h-full cursor-col-resize bg-transparent hover:bg-blue-400/20 transition-all duration-200 group ${
+            isResizing ? 'bg-blue-400/30' : ''
+          }`}
+          onMouseDown={handleMouseDown}
+          title="Drag to resize sidebar"
+        >
+          <div className={`absolute right-0 top-1/2 transform -translate-y-1/2 w-0.5 h-8 transition-all duration-200 ${
+            isResizing 
+              ? 'bg-blue-400 h-16' 
+              : 'bg-vscode-border group-hover:bg-blue-400/50'
+          }`} />
+        </div>
+        </div>
+      )}
+
+      {/* Collapse/Expand indicator */}
+      {isCollapsed && activeTab && (
+        <div className="w-0.5 bg-blue-400 h-full animate-in slide-in-from-right-1 duration-200" />
+      )}
     </div>
   );
 };

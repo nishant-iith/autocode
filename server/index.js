@@ -29,12 +29,21 @@ const io = new Server(server, {
 
 const PORT = process.env.PORT || 5000;
 
+// Security headers
+app.use((req, res, next) => {
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('X-Frame-Options', 'DENY');
+  res.setHeader('X-XSS-Protection', '1; mode=block');
+  res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+  next();
+});
+
 app.use(cors({
-  origin: ["http://localhost:3000", "http://localhost:3001", "http://localhost:3002"],
+  origin: ["http://localhost:3000", "http://localhost:3001", "http://localhost:3002", "http://localhost:3003"],
   credentials: true
 }));
-app.use(express.json({ limit: '50mb' }));
-app.use(express.urlencoded({ extended: true, limit: '50mb' }));
+app.use(express.json({ limit: '10mb' })); // Reduced from 50mb for security
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
 const WORKSPACES_DIR = path.join(__dirname, 'workspaces');
 fs.ensureDirSync(WORKSPACES_DIR);

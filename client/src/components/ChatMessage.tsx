@@ -64,7 +64,8 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message, isLast }) => {
           <div className="text-sm">
             <ReactMarkdown
               components={{
-                code({ className, children, inline, ...props }: { className?: string; children?: React.ReactNode; inline?: boolean; [key: string]: unknown }) {
+                code(props: { className?: string; children?: React.ReactNode; inline?: boolean }) {
+                  const { className, children, inline } = props;
                   const match = /language-(\w+)/.exec(className || '');
                   const codeContent = String(children).replace(/\n$/, '');
                   

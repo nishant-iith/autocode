@@ -2,6 +2,7 @@ import express from 'express';
 import fs from 'fs-extra';
 import path from 'path';
 import { v4 as uuidv4 } from 'uuid';
+import { getSecurePath } from '../utils/security.js';
 import JSZip from 'jszip';
 import multer from 'multer';
 import { Octokit } from '@octokit/rest';
@@ -241,9 +242,9 @@ router.get('/list', async (req, res) => {
 router.delete('/:workspaceId', async (req, res) => {
   try {
     const { workspaceId } = req.params;
-    const workspacePath = path.join(req.workspacesDir, workspaceId);
+    const workspacePath = getSecurePath(req.workspacesDir, workspaceId);
     
-    if (!await fs.pathExists(workspacePath)) {
+    if (!workspacePath || !await fs.pathExists(workspacePath)) {
       return res.status(404).json({ error: 'Project not found' });
     }
     

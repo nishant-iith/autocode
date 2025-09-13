@@ -1,7 +1,7 @@
 {
   "name": "autocode",
   "version": "1.0.0",
-  "description": "Online VS Code for Node.js Development",
+  "description": "Online Code Editor for Node.js Development",
   "main": "server/index.js",
   "scripts": {
     "dev": "concurrently \"npm run server:dev\" \"npm run client:dev\"",

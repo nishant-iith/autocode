@@ -2,15 +2,16 @@ import express from 'express';
 import fs from 'fs-extra';
 import path from 'path';
 import { v4 as uuidv4 } from 'uuid';
+import { getSecurePath, validateFileSize, validateFileType } from '../utils/security.js';
 
 const router = express.Router();
 
 router.get('/tree/:workspaceId', async (req, res) => {
   try {
     const { workspaceId } = req.params;
-    const workspacePath = path.join(req.workspacesDir, workspaceId);
+    const workspacePath = getSecurePath(req.workspacesDir, workspaceId);
     
-    if (!await fs.pathExists(workspacePath)) {
+    if (!workspacePath || !await fs.pathExists(workspacePath)) {
       return res.status(404).json({ error: 'Workspace not found' });
     }
 
@@ -61,10 +62,15 @@ router.get('/content/:workspaceId/*', async (req, res) => {
   try {
     const { workspaceId } = req.params;
     const filePath = req.params[0];
-    const fullPath = path.join(req.workspacesDir, workspaceId, filePath);
+    const fullPath = getSecurePath(req.workspacesDir, workspaceId, filePath);
     
-    if (!await fs.pathExists(fullPath)) {
+    if (!fullPath || !await fs.pathExists(fullPath)) {
       return res.status(404).json({ error: 'File not found' });
+    }
+
+    // Validate file size (prevent reading huge files)
+    if (!await validateFileSize(fullPath, 50 * 1024 * 1024)) { // 50MB limit
+      return res.status(413).json({ error: 'File too large' });
     }
 
     const content = await fs.readFile(fullPath, 'utf8');
@@ -87,10 +93,24 @@ router.put('/content/:workspaceId/*', async (req, res) => {
     const { workspaceId } = req.params;
     const filePath = req.params[0];
     const { content } = req.body;
-    const fullPath = path.join(req.workspacesDir, workspaceId, filePath);
+    const fullPath = getSecurePath(req.workspacesDir, workspaceId, filePath);
+    
+    if (!fullPath) {
+      return res.status(400).json({ error: 'Invalid file path' });
+    }
+
+    // Validate file type
+    if (!validateFileType(filePath)) {
+      return res.status(400).json({ error: 'File type not allowed' });
+    }
+
+    // Validate content size (prevent huge uploads)
+    if (content && content.length > 10 * 1024 * 1024) { // 10MB limit
+      return res.status(413).json({ error: 'Content too large' });
+    }
     
     await fs.ensureFile(fullPath);
-    await fs.writeFile(fullPath, content, 'utf8');
+    await fs.writeFile(fullPath, content || '', 'utf8');
     
     req.io.to(`workspace-${workspaceId}`).emit('file-changed', {
       path: filePath,

@@ -38,7 +38,7 @@ const Welcome: React.FC = () => {
           </div>
           <div className="space-y-2">
             <p className="text-lg text-vscode-text font-medium">
-              Professional VS Code Experience in Your Browser
+              Professional Code Editor Experience in Your Browser
             </p>
             <p className="text-sm text-vscode-text-muted/80">
               Build, edit, and manage your Node.js projects with full-featured IDE capabilities
@@ -94,7 +94,7 @@ const Welcome: React.FC = () => {
               </h3>
             </div>
             <p className="text-sm text-vscode-text-muted group-hover:text-vscode-text-muted/90 leading-relaxed">
-              Import from ZIP file or GitHub repository seamlessly
+              Import from ZIP file or Git repository seamlessly
             </p>
           </button>
         </div>
@@ -172,7 +172,7 @@ const Welcome: React.FC = () => {
               <strong className="text-vscode-text text-xs">Import Options:</strong>
               <ul className="mt-1 space-y-1">
                 <li>• ZIP Upload</li>
-                <li>• GitHub Import</li>
+                <li>• Git Import</li>
                 <li>• Templates</li>
               </ul>
             </div>

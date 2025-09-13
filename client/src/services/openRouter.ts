@@ -177,7 +177,7 @@ export class OpenRouterService {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${apiKey}`,
           'HTTP-Referer': window.location.origin,
-          'X-Title': 'AutoCode - Online VS Code',
+          'X-Title': 'AutoCode - Online Code Editor',
         },
         body: JSON.stringify(requestBody),
       });

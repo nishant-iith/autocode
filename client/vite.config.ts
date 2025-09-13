@@ -9,6 +9,22 @@ export default defineConfig({
       '@': path.resolve(__dirname, './src'),
     },
   },
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          vendor: ['react', 'react-dom'],
+          monaco: ['@monaco-editor/react'],
+          ui: ['@radix-ui/react-dialog', '@radix-ui/react-dropdown-menu', '@radix-ui/react-select', '@radix-ui/react-tabs', '@radix-ui/react-toast'],
+          markdown: ['react-markdown', 'react-syntax-highlighter'],
+          utils: ['axios', 'zustand', 'uuid', 'clsx', 'tailwind-merge']
+        }
+      }
+    },
+    chunkSizeWarningLimit: 600,
+    target: 'esnext',
+    minify: 'esbuild'
+  },
   server: {
     port: 3000,
     proxy: {

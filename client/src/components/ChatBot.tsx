@@ -1,18 +1,15 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { 
-  MessageCircle, 
   X, 
   Send, 
   Settings, 
   Key, 
-  Bot, 
   Loader, 
   AlertCircle,
   Trash2,
   Eye,
   EyeOff,
-  Plus,
-  History
+  Sparkles
 } from 'lucide-react';
 import { useChatStore } from '../store/chatStore';
 import ChatMessage from './ChatMessage';
@@ -31,7 +28,6 @@ const ChatBot: React.FC = () => {
     useStreaming,
     maxTokens,
     temperature,
-    conversationHistory,
     toggleChat,
     closeChat,
     setApiKey,
@@ -44,8 +40,6 @@ const ChatBot: React.FC = () => {
     setMaxTokens,
     setTemperature,
     setUseStreaming,
-    loadConversation,
-    newConversation,
   } = useChatStore();
 
   const [inputMessage, setInputMessage] = useState('');
@@ -84,43 +78,67 @@ const ChatBot: React.FC = () => {
 
   if (!isOpen) {
     return (
-      <button
-        onClick={toggleChat}
-        className="fixed bottom-6 right-6 bg-vscode-accent hover:bg-blue-600 text-white p-4 rounded-full shadow-lg transition-colors z-50"
-        title="Open AI Chat"
-      >
-        <MessageCircle size={24} />
-      </button>
+      <div className="fixed bottom-6 right-6 z-50">
+        <button
+          onClick={toggleChat}
+          className="group relative bg-vscode-editor hover:bg-vscode-panel border-2 border-vscode-accent text-vscode-accent hover:text-white hover:bg-vscode-accent px-4 py-3 rounded-lg shadow-lg transition-all duration-200 hover-lift flex items-center space-x-2"
+          title="AutoChat - AI Assistant"
+        >
+          <div className="relative">
+            <Sparkles size={20} className="transition-transform duration-200 group-hover:scale-110" />
+            <div className="absolute -top-1 -right-1 w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+          </div>
+          <span className="text-sm font-medium hidden sm:block">AutoChat</span>
+        </button>
+        
+        {/* Subtle hint for first-time users */}
+        {!apiKey && (
+          <div className="absolute bottom-full right-0 mb-2 bg-vscode-panel border border-vscode-border rounded-lg p-3 text-xs text-vscode-text-muted animate-in slide-in-from-bottom-1 fade-in duration-300 shadow-lg">
+            <div className="flex items-center space-x-2">
+              <Sparkles size={12} className="text-vscode-accent" />
+              <span>AutoCode AI Assistant</span>
+            </div>
+          </div>
+        )}
+      </div>
     );
   }
 
   return (
-    <div className="fixed inset-y-0 right-0 w-full sm:w-80 lg:w-96 bg-vscode-sidebar border-l border-vscode-border flex flex-col z-40">
+    <div className="h-full bg-vscode-sidebar flex flex-col">
       {/* Header */}
-      <div className="flex items-center justify-between p-4 border-b border-vscode-border bg-vscode-panel">
-        <div className="flex items-center space-x-2">
-          <Bot className="text-vscode-accent" size={20} />
-          <h3 className="font-medium text-vscode-text">AI Assistant</h3>
+      <div className="flex items-center justify-between p-4 border-b border-vscode-border bg-gradient-to-r from-vscode-panel to-vscode-sidebar">
+        <div className="flex items-center space-x-3">
+          <div className="relative">
+            <Sparkles className="text-vscode-accent" size={20} />
+            <div className="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 bg-green-400 rounded-full animate-pulse"></div>
+          </div>
+          <div className="flex items-center space-x-2">
+            <h3 className="font-semibold text-vscode-text">AutoChat</h3>
+            <div className="text-xs text-vscode-text-muted bg-vscode-border px-2 py-1 rounded-md">AI Assistant</div>
+          </div>
         </div>
-        <div className="flex items-center space-x-1">
-          <button
-            onClick={newConversation}
-            className="p-1 hover:bg-vscode-border rounded text-vscode-text-muted hover:text-vscode-text transition-colors"
-            title="New Conversation"
-            disabled={messages.length === 0}
-          >
-            <Plus size={16} />
-          </button>
+        <div className="flex items-center space-x-2">
+          {messages.length > 0 && (
+            <button
+              onClick={clearMessages}
+              className="p-2 hover:bg-vscode-border/70 rounded-lg text-vscode-text-muted hover:text-vscode-text transition-all duration-150 hover-lift"
+              title="Clear conversation"
+            >
+              <Trash2 size={16} />
+            </button>
+          )}
           <button
             onClick={() => setShowSettings(!showSettings)}
-            className="p-1 hover:bg-vscode-border rounded text-vscode-text-muted hover:text-vscode-text transition-colors"
+            className={`p-2 hover:bg-vscode-border/70 rounded-lg text-vscode-text-muted hover:text-vscode-text transition-all duration-150 hover-lift ${showSettings ? 'bg-vscode-border/50 text-vscode-text' : ''}`}
             title="Settings"
           >
             <Settings size={16} />
           </button>
           <button
             onClick={closeChat}
-            className="p-1 hover:bg-vscode-border rounded text-vscode-text-muted hover:text-vscode-text transition-colors"
+            className="p-2 hover:bg-red-500/20 hover:text-red-400 rounded-lg text-vscode-text-muted transition-all duration-150 hover-lift"
+            title="Close AutoChat"
           >
             <X size={16} />
           </button>
@@ -300,45 +318,6 @@ const ChatBot: React.FC = () => {
             </div>
           )}
 
-          {/* Conversation History */}
-          {conversationHistory.length > 0 && (
-            <div>
-              <div className="flex items-center justify-between mb-2">
-                <label className="text-sm font-medium text-vscode-text">History</label>
-                <History size={14} className="text-vscode-text-muted" />
-              </div>
-              <div className="max-h-32 overflow-y-auto space-y-1 vscode-scrollbar">
-                {conversationHistory.map((conversation, index) => (
-                  <button
-                    key={index}
-                    onClick={() => loadConversation(conversation)}
-                    className="w-full text-left p-2 text-xs bg-vscode-editor hover:bg-vscode-border rounded border border-vscode-border transition-colors"
-                  >
-                    <div className="truncate text-vscode-text">
-                      {conversation.find(m => m.role === 'user')?.content.substring(0, 50) || 'Empty conversation'}
-                      {(conversation.find(m => m.role === 'user')?.content.length || 0) > 50 && '...'}
-                    </div>
-                    <div className="text-vscode-text-muted mt-1">
-                      {conversation.length} messages
-                    </div>
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Chat Controls */}
-          {messages.length > 0 && (
-            <div className="flex justify-between">
-              <button
-                onClick={clearMessages}
-                className="flex items-center space-x-1 text-xs text-vscode-text-muted hover:text-vscode-text transition-colors"
-              >
-                <Trash2 size={12} />
-                <span>Clear Chat</span>
-              </button>
-            </div>
-          )}
         </div>
       )}
 
@@ -359,21 +338,39 @@ const ChatBot: React.FC = () => {
       {/* Messages */}
       <div className="flex-1 overflow-y-auto p-4 space-y-4 vscode-scrollbar">
         {!isApiKeyValid ? (
-          <div className="text-center text-vscode-text-muted space-y-2">
-            <Key size={48} className="mx-auto opacity-50" />
-            <p className="text-sm">Configure your OpenRouter API key to start chatting</p>
+          <div className="text-center text-vscode-text-muted space-y-4 py-12">
+            <div className="relative mx-auto w-20 h-20 bg-gradient-to-br from-vscode-panel to-vscode-border rounded-xl flex items-center justify-center border border-vscode-border shadow-lg">
+              <Key size={28} className="text-vscode-accent" />
+            </div>
+            <div className="space-y-2">
+              <p className="text-lg font-semibold text-vscode-text">Welcome to AutoChat</p>
+              <p className="text-sm text-vscode-text-muted px-6">AutoCode's intelligent AI assistant is ready to help you with coding, debugging, and development questions.</p>
+              <p className="text-xs text-vscode-text-muted">Configure your OpenRouter API key to get started</p>
+            </div>
             <button
               onClick={() => setShowSettings(true)}
-              className="text-vscode-accent hover:underline text-sm"
+              className="inline-flex items-center space-x-2 px-4 py-2 bg-vscode-accent text-white rounded-lg hover:bg-blue-600 transition-all duration-200 hover-lift shadow-sm"
             >
-              Open Settings
+              <Settings size={16} />
+              <span>Configure API Key</span>
             </button>
           </div>
         ) : messages.length === 0 ? (
-          <div className="text-center text-vscode-text-muted space-y-2">
-            <Bot size={48} className="mx-auto opacity-50" />
-            <p className="text-sm">Start a conversation with the AI assistant</p>
-            <p className="text-xs">Ask about code, get help with development, or chat about anything!</p>
+          <div className="text-center text-vscode-text-muted space-y-4 py-8">
+            <div className="relative mx-auto w-20 h-20 bg-gradient-to-br from-vscode-accent/20 to-purple-500/20 rounded-xl flex items-center justify-center border border-vscode-accent/30 shadow-lg">
+              <Sparkles size={28} className="text-vscode-accent" />
+              <div className="absolute -top-1 -right-1 w-3 h-3 bg-green-400 rounded-full animate-pulse shadow-sm"></div>
+            </div>
+            <div className="space-y-3">
+              <p className="text-lg font-semibold text-vscode-text">AutoChat is Ready</p>
+              <p className="text-sm text-vscode-text-muted px-6">I'm your AutoCode AI assistant. I can help you write code, explain concepts, debug issues, and answer programming questions.</p>
+            </div>
+            <div className="flex flex-wrap gap-2 justify-center px-4">
+              <div className="text-xs bg-vscode-panel border border-vscode-border rounded-lg px-3 py-2 hover:bg-vscode-border transition-colors">💡 Explain code</div>
+              <div className="text-xs bg-vscode-panel border border-vscode-border rounded-lg px-3 py-2 hover:bg-vscode-border transition-colors">🐛 Debug issues</div>
+              <div className="text-xs bg-vscode-panel border border-vscode-border rounded-lg px-3 py-2 hover:bg-vscode-border transition-colors">🔧 Optimize performance</div>
+              <div className="text-xs bg-vscode-panel border border-vscode-border rounded-lg px-3 py-2 hover:bg-vscode-border transition-colors">📚 Learn concepts</div>
+            </div>
           </div>
         ) : (
           messages.map((message, index) => (
@@ -387,15 +384,18 @@ const ChatBot: React.FC = () => {
 
         {/* Typing Indicator */}
         {isTyping && (
-          <div className="flex space-x-3 justify-start">
-            <div className="w-8 h-8 bg-vscode-accent rounded-full flex items-center justify-center flex-shrink-0">
-              <Bot size={16} className="text-white" />
+          <div className="flex space-x-3 justify-start animate-in fade-in duration-300">
+            <div className="w-8 h-8 bg-gradient-to-br from-vscode-accent to-purple-500 rounded-lg flex items-center justify-center flex-shrink-0 shadow-sm">
+              <Sparkles size={16} className="text-white" />
             </div>
-            <div className="bg-vscode-panel border border-vscode-border rounded-lg px-3 py-2">
-              <div className="flex space-x-1">
-                <div className="w-2 h-2 bg-vscode-text-muted rounded-full animate-bounce"></div>
-                <div className="w-2 h-2 bg-vscode-text-muted rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
-                <div className="w-2 h-2 bg-vscode-text-muted rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+            <div className="bg-vscode-panel border border-vscode-border rounded-lg px-4 py-3 max-w-sm shadow-sm">
+              <div className="flex items-center space-x-3">
+                <div className="flex space-x-1">
+                  <div className="w-2 h-2 bg-vscode-accent rounded-full animate-bounce"></div>
+                  <div className="w-2 h-2 bg-vscode-accent rounded-full animate-bounce" style={{ animationDelay: '0.15s' }}></div>
+                  <div className="w-2 h-2 bg-vscode-accent rounded-full animate-bounce" style={{ animationDelay: '0.3s' }}></div>
+                </div>
+                <span className="text-sm text-vscode-text-muted">AutoChat is thinking...</span>
               </div>
             </div>
           </div>
@@ -405,28 +405,90 @@ const ChatBot: React.FC = () => {
       </div>
 
       {/* Input */}
-      {isApiKeyValid && selectedModel && (
-        <form onSubmit={handleSendMessage} className="p-4 border-t border-vscode-border bg-vscode-panel">
-          <div className="flex space-x-2">
-            <input
-              ref={inputRef}
-              type="text"
-              value={inputMessage}
-              onChange={(e) => setInputMessage(e.target.value)}
-              placeholder="Ask me anything..."
-              disabled={isTyping}
-              className="flex-1 px-3 py-2 bg-vscode-editor border border-vscode-border rounded text-sm text-vscode-text placeholder-vscode-text-muted focus:outline-none focus:border-vscode-accent disabled:opacity-50"
-            />
-            <button
-              type="submit"
-              disabled={!inputMessage.trim() || isTyping}
-              className="p-2 bg-vscode-accent text-white rounded hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-            >
-              <Send size={16} />
-            </button>
+      <div className="border-t border-vscode-border bg-gradient-to-r from-vscode-panel to-vscode-sidebar">
+        {isApiKeyValid && selectedModel ? (
+          <>
+            <form onSubmit={handleSendMessage} className="p-3">
+              <div className="flex items-end space-x-2">
+                <div className="flex-1 relative">
+                  <input
+                    ref={inputRef}
+                    type="text"
+                    value={inputMessage}
+                    onChange={(e) => setInputMessage(e.target.value)}
+                    placeholder="Ask AutoChat anything..."
+                    disabled={isTyping}
+                    className="w-full px-4 py-3 bg-vscode-editor border border-vscode-border rounded-lg text-sm text-vscode-text placeholder-vscode-text-muted focus:outline-none focus:ring-2 focus:ring-vscode-accent/50 focus:border-vscode-accent disabled:opacity-50 transition-all duration-150"
+                  />
+                  <div className="absolute right-2 top-1/2 transform -translate-y-1/2 text-xs text-vscode-text-muted">
+                    {inputMessage.length > 0 && (
+                      <span className="bg-vscode-panel px-2 py-0.5 rounded text-xs">
+                        {isTyping ? 'Sending...' : 'Enter to send'}
+                      </span>
+                    )}
+                  </div>
+                </div>
+                <button
+                  type="submit"
+                  disabled={!inputMessage.trim() || isTyping}
+                  className="p-3 bg-vscode-accent text-white rounded-lg hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-150 flex items-center justify-center hover-lift shadow-sm"
+                  title="Send message to AutoChat"
+                >
+                  <Send size={18} />
+                </button>
+              </div>
+            </form>
+            
+            {messages.length === 0 && (
+              <div className="px-4 pb-4 space-y-3">
+                <div className="text-xs text-vscode-text-muted font-medium">Quick suggestions:</div>
+                <div className="grid grid-cols-2 gap-2">
+                  {[
+                    "Optimize my code",
+                    "Explain this function", 
+                    "Debug an error",
+                    "Write unit tests",
+                    "Review code quality",
+                    "Best practices"
+                  ].map((suggestion) => (
+                    <button
+                      key={suggestion}
+                      onClick={() => setInputMessage(suggestion)}
+                      className="text-xs bg-vscode-editor hover:bg-vscode-border border border-vscode-border rounded-lg px-3 py-2 text-vscode-text-muted hover:text-vscode-text transition-all duration-150 text-left hover-lift"
+                    >
+                      {suggestion}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+          </>
+        ) : (
+          <div className="p-3">
+            <div className="flex items-end space-x-2">
+              <div className="flex-1 relative">
+                <input
+                  type="text"
+                  placeholder="Configure API key to start chatting..."
+                  disabled={true}
+                  className="w-full px-4 py-3 bg-vscode-editor border border-vscode-border rounded-lg text-sm text-vscode-text placeholder-vscode-text-muted focus:outline-none opacity-50 cursor-not-allowed"
+                />
+              </div>
+              <button
+                type="button"
+                disabled={true}
+                className="p-3 bg-vscode-accent/50 text-white rounded-lg cursor-not-allowed opacity-50 flex items-center justify-center"
+                title="Configure API key first"
+              >
+                <Send size={18} />
+              </button>
+            </div>
+            <div className="text-xs text-center text-vscode-text-muted mt-2">
+              Click the settings button above to configure your API key
+            </div>
           </div>
-        </form>
-      )}
+        )}
+      </div>
     </div>
   );
 };

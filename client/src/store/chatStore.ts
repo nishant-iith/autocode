@@ -5,6 +5,7 @@ import { v4 as uuidv4 } from 'uuid';
 interface ChatState {
   // UI State
   isOpen: boolean;
+  width: number;
   isLoading: boolean;
   error: string | null;
   
@@ -32,6 +33,7 @@ interface ChatState {
   // Actions
   toggleChat: () => void;
   closeChat: () => void;
+  setWidth: (width: number) => void;
   setApiKey: (apiKey: string) => void;
   clearApiKey: () => void;
   loadModels: () => Promise<void>;
@@ -50,7 +52,8 @@ interface ChatState {
 
 export const useChatStore = create<ChatState>((set, get) => ({
   // Initial state
-  isOpen: false,
+  isOpen: true, // Default to open for separate panel layout
+  width: 400, // Default 30% of 1280px screen
   isLoading: false,
   error: null,
   
@@ -85,6 +88,10 @@ export const useChatStore = create<ChatState>((set, get) => ({
 
   closeChat: () => {
     set({ isOpen: false });
+  },
+
+  setWidth: (width: number) => {
+    set({ width });
   },
 
   setApiKey: async (apiKey: string) => {
