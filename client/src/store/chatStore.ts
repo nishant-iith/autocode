@@ -39,6 +39,7 @@ interface ChatState {
   loadModels: () => Promise<void>;
   selectModel: (modelId: string) => void;
   sendMessage: (content: string) => Promise<void>;
+  sendMessageWithContext: (content: string, context: string) => Promise<void>;
   clearMessages: () => void;
   setError: (error: string | null) => void;
   setMaxTokens: (tokens: number) => void;
@@ -254,6 +255,133 @@ export const useChatStore = create<ChatState>((set, get) => ({
 
     } catch (error) {
       console.error('Failed to send message:', error);
+      
+      let errorMessage = 'Failed to send message';
+      if (error instanceof Error) {
+        if (error.message.includes('No endpoints found')) {
+          errorMessage = 'No free models available for your API key. Please check your OpenRouter settings or try a different model.';
+        } else if (error.message.includes('data policy')) {
+          errorMessage = 'Model access restricted by data policy. Please configure your privacy settings at openrouter.ai/settings/privacy';
+        } else {
+          errorMessage = error.message;
+        }
+      }
+      
+      set({ 
+        isTyping: false,
+        error: errorMessage
+      });
+    }
+  },
+
+  sendMessageWithContext: async (content: string, context: string) => {
+    const { 
+      selectedModel, 
+      messages, 
+      maxTokens, 
+      temperature,
+      useStreaming,
+      apiKey 
+    } = get();
+
+    if (!selectedModel || !apiKey) {
+      set({ error: 'Please select a model and configure API key' });
+      return;
+    }
+
+    if (!content.trim()) return;
+
+    // Combine user message with context
+    const contextualContent = context 
+      ? `Context:\n${context}\n\nUser: ${content.trim()}`
+      : content.trim();
+
+    // Add user message (show original content without context in UI)
+    const userMessage: ChatMessage = {
+      id: uuidv4(),
+      role: 'user',
+      content: content.trim(),
+      timestamp: new Date(),
+    };
+
+    set({ 
+      messages: [...messages, userMessage],
+      isTyping: true,
+      streamingMessage: '',
+      error: null 
+    });
+
+    try {
+      // Create assistant message placeholder for streaming
+      const assistantMessageId = uuidv4();
+      const assistantMessage: ChatMessage = {
+        id: assistantMessageId,
+        role: 'assistant',
+        content: '',
+        timestamp: new Date(),
+      };
+
+      // Add empty assistant message if streaming
+      if (useStreaming) {
+        const currentMessages = get().messages;
+        set({ 
+          messages: [...currentMessages, assistantMessage]
+        });
+      }
+
+      // Create contextual message for API (but use original messages for conversation history)
+      const contextualMessage: ChatMessage = {
+        id: uuidv4(),
+        role: 'user',
+        content: contextualContent,
+        timestamp: new Date(),
+      };
+
+      // Send to OpenRouter API with context
+      const response = await OpenRouterService.sendMessage(
+        selectedModel,
+        [...messages, contextualMessage],
+        {
+          maxTokens,
+          temperature,
+          stream: useStreaming,
+          onChunk: useStreaming ? (chunk: string) => {
+            // Update the streaming message and the last message in the array
+            const currentState = get();
+            const updatedMessages = [...currentState.messages];
+            const lastMessageIndex = updatedMessages.length - 1;
+            
+            if (lastMessageIndex >= 0 && updatedMessages[lastMessageIndex].id === assistantMessageId) {
+              updatedMessages[lastMessageIndex] = {
+                ...updatedMessages[lastMessageIndex],
+                content: updatedMessages[lastMessageIndex].content + chunk
+              };
+              
+              set({ 
+                messages: updatedMessages,
+                streamingMessage: currentState.streamingMessage + chunk
+              });
+            }
+          } : undefined
+        }
+      );
+
+      // If not streaming, add the complete response
+      if (!useStreaming) {
+        assistantMessage.content = response;
+        const currentMessages = get().messages;
+        set({ 
+          messages: [...currentMessages, assistantMessage]
+        });
+      }
+
+      set({ 
+        isTyping: false,
+        streamingMessage: ''
+      });
+
+    } catch (error) {
+      console.error('Failed to send message with context:', error);
       
       let errorMessage = 'Failed to send message';
       if (error instanceof Error) {
