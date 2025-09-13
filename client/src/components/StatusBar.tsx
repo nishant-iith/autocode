@@ -43,7 +43,7 @@ const StatusBar: React.FC<StatusBarProps> = () => {
   };
 
   return (
-    <div className="h-6 bg-vscode-accent text-white flex items-center justify-between px-2 sm:px-3 text-xs overflow-hidden">
+    <div className="h-6 bg-vscode-accent text-white flex items-center justify-between px-2 sm:px-3 text-xs overflow-hidden rounded-b-xl">
       <div className="flex items-center space-x-2 sm:space-x-4 min-w-0">
         {currentProject && (
           <>

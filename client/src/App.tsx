@@ -85,27 +85,34 @@ function App() {
   }, [isResizingChat, handleChatResizeMouseMove, handleChatResizeMouseUp]);
 
   return (
-    <div className="flex flex-col h-screen bg-gray-100 text-vscode-text p-4 gap-4">
+    <div className="flex flex-col h-screen bg-slate-900 text-vscode-text p-4 gap-4">
       <div className="flex flex-1 gap-4 overflow-hidden">
         {/* Main AutoCode Area (Left Side) */}
         <div 
-          className="flex flex-1 overflow-hidden bg-vscode-bg rounded-xl shadow-xl border border-vscode-border/50"
+          className="flex flex-col flex-1 overflow-hidden bg-vscode-bg rounded-xl shadow-xl border border-vscode-border/50"
           style={{ 
             width: isChatOpen ? `calc(100% - ${chatWidth + 16}px)` : '100%'
           }}
         >
-          <Sidebar onOpenSettings={() => setShowSettings(true)} />
-          
-          <div className="flex flex-col flex-1">
-            {openTabs.length > 0 && <TabBar />}
+          <div className="flex flex-1 overflow-hidden">
+            <Sidebar onOpenSettings={() => setShowSettings(true)} />
             
-            <div className="flex-1 relative">
-              {currentProject && activeFile ? (
-                <Editor />
-              ) : (
-                <Welcome />
-              )}
+            <div className="flex flex-col flex-1">
+              {openTabs.length > 0 && <TabBar />}
+              
+              <div className="flex-1 relative">
+                {currentProject && activeFile ? (
+                  <Editor />
+                ) : (
+                  <Welcome />
+                )}
+              </div>
             </div>
+          </div>
+          
+          {/* Status Bar - Only for AutoCode */}
+          <div className="border-t border-vscode-border">
+            <StatusBar />
           </div>
         </div>
 
@@ -123,7 +130,7 @@ function App() {
               <div className={`w-1 h-12 rounded-full transition-all duration-200 ${
                 isResizingChat 
                   ? 'bg-blue-400 h-20' 
-                  : 'bg-gray-300 group-hover:bg-blue-400/50'
+                  : 'bg-slate-600 group-hover:bg-blue-400/50'
               }`} />
             </div>
             
@@ -136,10 +143,6 @@ function App() {
             </div>
           </div>
         )}
-      </div>
-      
-      <div className="px-4">
-        <StatusBar />
       </div>
       
       {showCommandPalette && (
