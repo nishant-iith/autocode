@@ -206,7 +206,7 @@ export class EnhancedAIService {
   ): Array<{role: string, content: string}> {
     const messages = [
       {
-        role: 'system' as const,
+        role: 'system' as string,
         content: systemPrompt
       }
     ];
@@ -214,7 +214,7 @@ export class EnhancedAIService {
     // Add context information if available
     if (context) {
       messages.push({
-        role: 'system' as const,
+        role: 'system' as string,
         content: AIContextManager.formatContextForAI(context)
       });
     }
@@ -224,7 +224,7 @@ export class EnhancedAIService {
     recentHistory.forEach(msg => {
       if (msg.role !== 'system') {
         messages.push({
-          role: msg.role,
+          role: msg.role as string,
           content: msg.content
         });
       }
@@ -232,7 +232,7 @@ export class EnhancedAIService {
 
     // Add current user message
     messages.push({
-      role: 'user' as const,
+      role: 'user' as string,
       content: userMessage
     });
 
