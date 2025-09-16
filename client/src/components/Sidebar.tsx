@@ -26,7 +26,7 @@ const Sidebar: React.FC<SidebarProps> = ({ onOpenSettings }) => {
   }, []);
 
   const throttledSetWidth = useMemo(
-    () => throttle((width: number) => setWidth(width), 16), // ~60fps
+    () => throttle(setWidth, 16), // ~60fps
     [setWidth]
   );
 

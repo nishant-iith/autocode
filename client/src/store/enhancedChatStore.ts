@@ -5,7 +5,7 @@
 
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { EnhancedAIService, AIMessage, StreamingResponse } from '../services/enhancedAIService';
+import { EnhancedAIService, AIMessage } from '../services/enhancedAIService';
 import { AIArtifact } from '../services/aiActionParser';
 import { OperationProgress } from '../services/aiFileOperations';
 import { OpenRouterService, OpenRouterModel } from '../services/openRouter';
@@ -305,7 +305,7 @@ export const useEnhancedChatStore = create<EnhancedChatState>()(
             const { getEditPromptWithContext } = await import('../services/aiSystemPrompts');
 
             // Get file content for context if editing existing file
-            let targetFileContext = null;
+            let targetFileContext: { path: string; content: string; language: string } | undefined = undefined;
             if (currentFile) {
               const fileContent = await AIFileOperations.getFileContent(
                 currentFile.path,

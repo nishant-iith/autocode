@@ -82,7 +82,6 @@ const TabBar: React.FC = () => {
                   <Sparkles
                     size={8}
                     className="text-purple-400 animate-pulse"
-                    title="Modified by AI"
                   />
                 </div>
               )}

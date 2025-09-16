@@ -75,7 +75,7 @@ function App() {
   }, []);
 
   const throttledSetChatWidth = useMemo(
-    () => throttle((width: number) => setChatWidth(width), 16), // ~60fps
+    () => throttle(setChatWidth, 16), // ~60fps
     [setChatWidth]
   );
 

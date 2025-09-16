@@ -203,7 +203,7 @@ export class EnhancedAIService {
     conversationHistory: AIMessage[],
     systemPrompt: string,
     context?: ConversationContext
-  ) {
+  ): Array<{role: 'system' | 'user' | 'assistant', content: string}> {
     const messages = [
       {
         role: 'system' as const,
@@ -224,7 +224,7 @@ export class EnhancedAIService {
     recentHistory.forEach(msg => {
       if (msg.role !== 'system') {
         messages.push({
-          role: msg.role,
+          role: msg.role as 'user' | 'assistant',
           content: msg.content
         });
       }

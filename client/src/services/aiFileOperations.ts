@@ -6,7 +6,6 @@
 
 import axios from 'axios';
 import { useEditorStore } from '../store/editorStore';
-import { useProjectStore } from '../store/projectStore';
 import { AIAction, AIArtifact } from './aiActionParser';
 
 export interface FileOperationResult {

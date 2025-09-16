@@ -26,7 +26,7 @@ import ChatMessage from './ChatMessage';
 import { AIActionParser } from '../services/aiActionParser';
 import { AIFileOperations, OperationProgress } from '../services/aiFileOperations';
 import { AIContextManager } from '../services/aiContextManager';
-import { getSystemPrompt, generateContextualPrompt } from '../services/aiSystemPrompts';
+import { generateContextualPrompt } from '../services/aiSystemPrompts';
 
 const ChatBot: React.FC = () => {
   const {

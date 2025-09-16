@@ -6,7 +6,6 @@
 
 import { useEditorStore } from '../store/editorStore';
 import { useProjectStore } from '../store/projectStore';
-import { useChatStore } from '../store/chatStore';
 
 export interface FileContext {
   path: string;
