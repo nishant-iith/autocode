@@ -1,5 +1,5 @@
 import React, { useCallback } from 'react';
-import { X, Circle, FileText } from 'lucide-react';
+import { X, Circle, FileText, Sparkles } from 'lucide-react';
 import { useEditorStore } from '../store/editorStore';
 
 const getFileIconColor = (fileName: string): string => {
@@ -68,33 +68,53 @@ const TabBar: React.FC = () => {
           )}
           
           <div className="flex items-center px-4 py-2.5 min-w-0 flex-1">
-            <FileText 
-              size={14} 
-              className={`mr-2.5 transition-all duration-200 ${
-                getFileIconColor(tab.name)
-              } ${
-                activeFile?.path === tab.path ? 'scale-110' : 'group-hover:scale-105'
-              }`}
-            />
+            <div className="relative mr-2.5">
+              <FileText
+                size={14}
+                className={`transition-all duration-200 ${
+                  getFileIconColor(tab.name)
+                } ${
+                  activeFile?.path === tab.path ? 'scale-110' : 'group-hover:scale-105'
+                }`}
+              />
+              {tab.isAIModified && (
+                <div className="absolute -top-1 -right-1">
+                  <Sparkles
+                    size={8}
+                    className="text-purple-400 animate-pulse"
+                    title="Modified by AI"
+                  />
+                </div>
+              )}
+            </div>
             <span className={`
               text-sm truncate flex-1 transition-all duration-200
               ${
-                activeFile?.path === tab.path 
-                  ? 'font-medium' 
+                activeFile?.path === tab.path
+                  ? 'font-medium'
                   : 'font-normal group-hover:font-medium'
               }
+              ${tab.isAIModified ? 'text-purple-300' : ''}
             `}>
               {tab.name}
             </span>
-            {tab.isDirty && (
-              <div className="ml-2 flex items-center">
-                <Circle 
-                  size={6} 
-                  className="fill-orange-400 text-orange-400 animate-pulse" 
+            <div className="ml-2 flex items-center space-x-1">
+              {tab.isAIModified && (
+                <div
+                  className="flex items-center text-purple-400"
+                  title={`AI modified ${tab.lastAIModification ? new Date(tab.lastAIModification).toLocaleTimeString() : 'recently'}`}
+                >
+                  <Sparkles size={10} className="animate-pulse" />
+                </div>
+              )}
+              {tab.isDirty && (
+                <Circle
+                  size={6}
+                  className="fill-orange-400 text-orange-400 animate-pulse"
                   fill="currentColor"
                 />
-              </div>
-            )}
+              )}
+            </div>
           </div>
           
           <button

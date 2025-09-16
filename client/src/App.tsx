@@ -2,7 +2,7 @@ import { useState, useCallback, useEffect, useMemo } from 'react';
 import { throttle } from './utils/throttle';
 import { useEditorStore } from './store/editorStore';
 import { useProjectStore } from './store/projectStore';
-import { useChatStore } from './store/chatStore';
+import { useEnhancedChatStore } from './store/enhancedChatStore';
 import { useSidebarStore } from './store/sidebarStore';
 import Sidebar from './components/Sidebar';
 import Editor from './components/Editor';
@@ -12,7 +12,8 @@ import Preview from './components/Preview';
 import StatusBar from './components/StatusBar';
 import CommandPalette from './components/CommandPalette';
 import SettingsModal from './components/modals/SettingsModal';
-import ChatBot from './components/ChatBot';
+import EnhancedChatBot from './components/EnhancedChatBot';
+import { useAIFileSync } from './services/aiFileSyncService';
 import { useHotkeys } from 'react-hotkeys-hook';
 import { MessageCircle } from 'lucide-react';
 
@@ -21,12 +22,27 @@ function App() {
   const [showSettings, setShowSettings] = useState(false);
   const { activeFile, openTabs } = useEditorStore();
   const { currentProject } = useProjectStore();
-  const { isOpen: isChatOpen, width: chatWidth, toggleChat, setWidth: setChatWidth } = useChatStore();
+  const { isOpen: isChatOpen, width: chatWidth, toggleChat, setWidth: setChatWidth } = useEnhancedChatStore();
   const { toggleSidebar, activeTab } = useSidebarStore();
+  const { connect, joinWorkspace, leaveWorkspace } = useAIFileSync();
   
   const [isResizingChat, setIsResizingChat] = useState(false);
   const MIN_CHAT_WIDTH = 300;
   const MAX_CHAT_WIDTH = 800;
+
+  // Initialize AI File Sync service
+  useEffect(() => {
+    connect();
+  }, [connect]);
+
+  // Handle workspace changes for AI sync
+  useEffect(() => {
+    if (currentProject?.workspaceId) {
+      joinWorkspace(currentProject.workspaceId);
+    } else {
+      leaveWorkspace();
+    }
+  }, [currentProject?.workspaceId, joinWorkspace, leaveWorkspace]);
 
   // Responsive chat width
   useEffect(() => {
@@ -149,7 +165,7 @@ function App() {
               className="bg-vscode-panel rounded-xl shadow-xl border border-vscode-border/50 overflow-hidden"
               style={{ width: chatWidth }}
             >
-              <ChatBot />
+              <EnhancedChatBot />
             </div>
           </div>
         )}
@@ -171,7 +187,7 @@ function App() {
         <button
           onClick={toggleChat}
           className="fixed bottom-6 right-6 w-14 h-14 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white rounded-full shadow-lg hover:shadow-xl transition-all duration-300 flex items-center justify-center group z-50"
-          title="Open Chat (Ctrl+Shift+C)"
+          title="Open Enhanced AutoChat (Ctrl+Shift+C)"
         >
           <MessageCircle size={24} className="group-hover:scale-110 transition-transform duration-200" />
           
