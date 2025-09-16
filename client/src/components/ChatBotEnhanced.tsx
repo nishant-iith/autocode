@@ -141,7 +141,7 @@ const ChatBot: React.FC = () => {
   /**
    * Sends message with enhanced system prompt
    */
-  const sendMessageWithEnhancedPrompt = async (message: string, systemPrompt: string): Promise<string | null> => {
+  const sendMessageWithEnhancedPrompt = async (message: string, _systemPrompt: string): Promise<string | null> => {
     // For now, we'll use the regular sendMessage and process the response
     // In the future, this could be enhanced to include system prompts
     await sendMessage(message);

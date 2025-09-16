@@ -132,7 +132,7 @@ export class AIFileOperations {
       const fileName = pathParts.pop() || action.filePath;
       const dirPath = pathParts.join('/') || '';
 
-      const response = await axios.post(`${this.baseURL}/files/create/${workspaceId}`, {
+      await axios.post(`${this.baseURL}/files/create/${workspaceId}`, {
         path: dirPath,
         name: fileName,
         type: 'file'
@@ -193,7 +193,7 @@ export class AIFileOperations {
       }
 
       // File exists, update its content
-      const response = await axios.put(`${this.baseURL}/files/content/${workspaceId}/${action.filePath}`, {
+      await axios.put(`${this.baseURL}/files/content/${workspaceId}/${action.filePath}`, {
         content: action.content
       });
 
@@ -229,7 +229,7 @@ export class AIFileOperations {
     }
 
     try {
-      const response = await axios.delete(`${this.baseURL}/files/${workspaceId}/${action.filePath}`);
+      await axios.delete(`${this.baseURL}/files/${workspaceId}/${action.filePath}`);
 
       // Update editor store by removing file
       const editorStore = useEditorStore.getState();

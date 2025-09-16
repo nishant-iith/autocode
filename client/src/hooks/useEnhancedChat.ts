@@ -82,7 +82,6 @@ export const useEnhancedChat = () => {
       throw new Error('Edit operations require an active project');
     }
 
-    const originalMode = chatStore.mode;
     chatStore.setMode('edit');
 
     try {

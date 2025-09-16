@@ -695,7 +695,7 @@ async function executeFileAction(action: any, workspaceId: string, AIFileOperati
     };
 
     const finalOperations = get().fileOperations || [];
-    const updatedOperations = finalOperations.map(op =>
+    const updatedOperations = finalOperations.map((op: OperationProgress) =>
       op === progress ? updatedProgress : op
     );
 

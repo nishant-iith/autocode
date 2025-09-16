@@ -154,7 +154,7 @@ export class AIContextManager {
         // Extract file paths and names
         const filePathRegex = /\b[a-zA-Z0-9_-]+(?:\/[a-zA-Z0-9_.-]+)*\.[a-zA-Z0-9]+\b/g;
         const filePaths = text.match(filePathRegex) || [];
-        filePaths.forEach(path => {
+        filePaths.forEach((path: string) => {
           keywords.add(path);
           const fileName = path.split('/').pop();
           if (fileName) keywords.add(fileName);
@@ -162,7 +162,7 @@ export class AIContextManager {
 
         // Extract quoted terms (often important concepts)
         const quotedTerms = text.match(/"([^"]+)"|'([^']+)'|`([^`]+)`/g) || [];
-        quotedTerms.forEach(term => {
+        quotedTerms.forEach((term: string) => {
           const cleaned = term.replace(/["`']/g, '');
           if (cleaned.length > 2 && cleaned.length < 50) {
             keywords.add(cleaned);
@@ -183,7 +183,7 @@ export class AIContextManager {
    */
   private static calculateRelevanceScore(
     file: FileContext,
-    conversationHistory: any[],
+    _conversationHistory: any[],
     keywords: string[]
   ): number {
     let score = 0;

@@ -21,6 +21,6 @@
     }
   },
   "include": ["src"],
-  "exclude": ["src/core"],
+  "exclude": ["src/core", "src/components/EnhancedChatBotTest.tsx"],
   "references": [{ "path": "./tsconfig.node.json" }]
 }
