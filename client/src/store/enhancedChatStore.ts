@@ -634,15 +634,22 @@ async function processFileOperations(
   set: any
 ) {
   try {
+    console.log('🔍 Parsing AI response for file operations...');
+
     // Parse artifacts and standalone actions
     const artifacts = AIActionParser.parseArtifacts(content);
     const standaloneActions = AIActionParser.parseStandaloneActions(content);
 
     if (artifacts.length === 0 && standaloneActions.length === 0) {
+      console.log('ℹ️ No file operations found in AI response');
       return; // No file operations to execute
     }
 
-    console.log('Found file operations:', { artifacts: artifacts.length, actions: standaloneActions.length });
+    console.log('✅ Found file operations:', {
+      artifacts: artifacts.length,
+      standaloneActions: standaloneActions.length,
+      totalActions: artifacts.reduce((sum, a) => sum + a.actions.length, 0) + standaloneActions.length
+    });
 
     // Execute artifacts
     for (const artifact of artifacts) {

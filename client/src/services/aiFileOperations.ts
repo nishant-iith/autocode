@@ -40,6 +40,8 @@ export class AIFileOperations {
     workspaceId: string,
     onProgress?: (progress: OperationProgress) => void
   ): Promise<FileOperationResult> {
+    console.log(`🤖 Executing action: ${action.type} on ${action.filePath || 'N/A'}`);
+
     const progress: OperationProgress = {
       action: action.type,
       filePath: action.filePath,
@@ -97,6 +99,9 @@ export class AIFileOperations {
     workspaceId: string,
     onProgress?: (progress: OperationProgress) => void
   ): Promise<FileOperationResult[]> {
+    console.log(`🎨 Executing artifact: ${artifact.id} - ${artifact.title}`);
+    console.log(`📝 Actions to execute: ${artifact.actions.length}`);
+
     const results: FileOperationResult[] = [];
 
     for (const action of artifact.actions) {
@@ -148,13 +153,15 @@ export class AIFileOperations {
       // Update editor store with new file
       const editorStore = useEditorStore.getState();
 
-      // Add file to store and open it using AI-specific method
-      editorStore.openFileFromAI({
+      // Add file to store and open it using AI-specific method (also syncs to WebContainer)
+      await editorStore.openFileFromAI({
         path: action.filePath,
         name: action.filePath.split('/').pop() || action.filePath,
         content: action.content,
         language: this.detectLanguage(action.filePath)
       });
+
+      console.log(`📄 Created file: ${action.filePath}`);
 
       return {
         success: true,
@@ -200,8 +207,10 @@ export class AIFileOperations {
       // Update editor store with modified content
       const editorStore = useEditorStore.getState();
 
-      // Update file content in store using AI-specific method
-      editorStore.updateFileFromAI(action.filePath, action.content);
+      // Update file content in store using AI-specific method (also syncs to WebContainer)
+      await editorStore.updateFileFromAI(action.filePath, action.content);
+
+      console.log(`✏️ Edited file: ${action.filePath}`);
 
       return {
         success: true,

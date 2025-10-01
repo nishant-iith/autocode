@@ -40,11 +40,12 @@ interface EditorState {
   toggleMinimap: () => void;
 
   // AI-specific actions
-  openFileFromAI: (file: { path: string; name: string; content: string; language?: string }) => void;
-  updateFileFromAI: (path: string, content: string) => void;
+  openFileFromAI: (file: { path: string; name: string; content: string; language?: string }) => Promise<void>;
+  updateFileFromAI: (path: string, content: string) => Promise<void>;
   markFileAsAIModified: (path: string) => void;
   clearAIModificationFlags: () => void;
   getFileByPath: (path: string) => FileTab | undefined;
+  syncToWebContainer: (path: string, content: string) => Promise<void>;
   
   // Autosave actions
   toggleAutosave: () => void;
@@ -231,7 +232,7 @@ export const useEditorStore = create<EditorState>()(
   })),
 
   // AI-specific actions
-  openFileFromAI: (file) => {
+  openFileFromAI: async (file) => {
     const { openTabs } = get();
     const existingTab = openTabs.find(tab => tab.path === file.path);
 
@@ -274,6 +275,9 @@ export const useEditorStore = create<EditorState>()(
           lastSaved: updatedLastSaved,
         };
       });
+
+      // Sync to WebContainer
+      await get().syncToWebContainer(file.path, file.content);
       return;
     }
 
@@ -299,9 +303,12 @@ export const useEditorStore = create<EditorState>()(
         [file.path]: new Date()
       }
     }));
+
+    // Sync to WebContainer
+    await get().syncToWebContainer(file.path, file.content);
   },
 
-  updateFileFromAI: (path, content) => {
+  updateFileFromAI: async (path, content) => {
     set((state) => {
       const updatedTabs = state.openTabs.map(tab =>
         tab.path === path
@@ -339,6 +346,9 @@ export const useEditorStore = create<EditorState>()(
         lastSaved: updatedLastSaved,
       };
     });
+
+    // Sync to WebContainer
+    await get().syncToWebContainer(path, content);
   },
 
   markFileAsAIModified: (path) => {
@@ -394,6 +404,40 @@ export const useEditorStore = create<EditorState>()(
   getFileByPath: (path) => {
     const { openTabs } = get();
     return openTabs.find(tab => tab.path === path);
+  },
+
+  /**
+   * Syncs a file to WebContainer virtual filesystem
+   * This enables the in-browser dev server to see the latest code
+   * @param path - File path to sync
+   * @param content - File content to sync
+   */
+  syncToWebContainer: async (path: string, content: string) => {
+    try {
+      // Access global WebContainer instance
+      const webcontainer = (window as any).__WEBCONTAINER_INSTANCE__;
+
+      if (!webcontainer) {
+        console.warn('⚠️ WebContainer not available for sync (not booted yet)');
+        return;
+      }
+
+      // Normalize path: convert backslashes to forward slashes and remove leading slash
+      const cleanPath = path.replace(/\\/g, '/').replace(/^\//, '');
+
+      // Create directory structure if needed
+      const dirPath = cleanPath.substring(0, cleanPath.lastIndexOf('/'));
+      if (dirPath) {
+        await webcontainer.fs.mkdir(dirPath, { recursive: true });
+      }
+
+      // Write file content to WebContainer virtual filesystem
+      await webcontainer.fs.writeFile(cleanPath, content);
+      console.log(`✅ Synced to WebContainer: ${cleanPath}`);
+    } catch (error) {
+      console.error(`❌ Failed to sync to WebContainer: ${path}`, error);
+      // Don't throw - sync failures shouldn't break the flow
+    }
   },
 }), {
   name: 'editor-settings',
