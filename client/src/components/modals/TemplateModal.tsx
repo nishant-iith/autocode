@@ -14,7 +14,7 @@ const TemplateModal: React.FC<TemplateModalProps> = ({ onClose, onSuccess }) => 
   const [projectName, setProjectName] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [isCreating, setIsCreating] = useState(false);
-  const { createFromTemplate, setCurrentProject } = useProjectStore();
+  const { createFromTemplate } = useProjectStore();
 
   useEffect(() => {
     const loadTemplates = async () => {
@@ -58,17 +58,8 @@ const TemplateModal: React.FC<TemplateModalProps> = ({ onClose, onSuccess }) => 
 
     setIsCreating(true);
     try {
-      const result = await createFromTemplate(selectedTemplate, projectName.trim() || undefined);
-      
-      const newProject = {
-        workspaceId: result.workspaceId,
-        name: result.name,
-        description: templates.find(t => t.id === selectedTemplate)?.description,
-        created: new Date(),
-        modified: new Date(),
-      };
-      
-      setCurrentProject(newProject);
+      // createFromTemplate now automatically sets it as current project
+      await createFromTemplate(selectedTemplate, projectName.trim() || undefined);
       onSuccess();
     } catch (error) {
       console.error('Failed to create from template:', error);

@@ -11,7 +11,7 @@ const CreateProjectModal: React.FC<CreateProjectModalProps> = ({ onClose, onSucc
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [isCreating, setIsCreating] = useState(false);
-  const { createProject, setCurrentProject } = useProjectStore();
+  const { createProject } = useProjectStore();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -19,17 +19,8 @@ const CreateProjectModal: React.FC<CreateProjectModalProps> = ({ onClose, onSucc
 
     setIsCreating(true);
     try {
-      const result = await createProject(name.trim(), description.trim() || undefined);
-      
-      const newProject = {
-        workspaceId: result.workspaceId,
-        name: result.name,
-        description: result.description,
-        created: new Date(),
-        modified: new Date(),
-      };
-      
-      setCurrentProject(newProject);
+      // createProject now automatically sets it as current project
+      await createProject(name.trim(), description.trim() || undefined);
       onSuccess();
     } catch (error) {
       console.error('Failed to create project:', error);

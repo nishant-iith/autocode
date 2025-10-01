@@ -23,19 +23,17 @@ export interface Project {
 interface ProjectState {
   currentProject: Project | null;
   fileTree: FileNode[];
-  projects: Project[];
   isLoading: boolean;
   error: string | null;
-  
+
   // Actions
   setCurrentProject: (project: Project | null) => void;
   loadFileTree: () => Promise<void>;
-  loadProjects: () => Promise<void>;
-  createProject: (name: string, description?: string) => Promise<{ workspaceId: string; name: string; description?: string }>;
-  createFromTemplate: (templateId: string, name?: string) => Promise<{ workspaceId: string; name: string }>;
-  importFromZip: (zipFile: File) => Promise<{ workspaceId: string; name: string }>;
-  importFromGithub: (repoUrl: string, accessToken?: string) => Promise<{ workspaceId: string; name: string }>;
-  deleteProject: (workspaceId: string) => Promise<void>;
+  createProject: (name: string, description?: string) => Promise<void>;
+  createFromTemplate: (templateId: string, name?: string) => Promise<void>;
+  importFromZip: (zipFile: File) => Promise<void>;
+  importFromGithub: (repoUrl: string, accessToken?: string) => Promise<void>;
+  closeProject: () => Promise<void>;
   toggleFolder: (path: string) => void;
   refreshFileTree: () => Promise<void>;
 }
@@ -43,7 +41,6 @@ interface ProjectState {
 export const useProjectStore = create<ProjectState>((set, get) => ({
   currentProject: null,
   fileTree: [],
-  projects: [],
   isLoading: false,
   error: null,
 
@@ -63,106 +60,140 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
       const tree = await api.getFileTree(currentProject.workspaceId);
       set({ fileTree: tree, isLoading: false });
     } catch (error) {
-      set({ 
+      set({
         error: error instanceof Error ? error.message : 'Failed to load file tree',
-        isLoading: false 
+        isLoading: false
       });
     }
   },
 
-  loadProjects: async () => {
-    set({ isLoading: true, error: null });
-    try {
-      const projects = await api.getProjects();
-      set({ projects, isLoading: false });
-    } catch (error) {
-      set({ 
-        error: error instanceof Error ? error.message : 'Failed to load projects',
-        isLoading: false 
-      });
-    }
-  },
-
+  /**
+   * Create a new project and automatically set it as the current project
+   * Replaces any existing project
+   */
   createProject: async (name, description) => {
     set({ isLoading: true, error: null });
     try {
-      const project = await api.createProject(name, description);
-      await get().loadProjects();
-      set({ isLoading: false });
-      return project;
+      const result = await api.createProject(name, description);
+
+      const newProject: Project = {
+        workspaceId: result.workspaceId,
+        name: result.name,
+        description: result.description,
+        created: new Date(),
+        modified: new Date(),
+      };
+
+      set({ currentProject: newProject, isLoading: false });
+      await get().loadFileTree();
     } catch (error) {
-      set({ 
+      set({
         error: error instanceof Error ? error.message : 'Failed to create project',
-        isLoading: false 
+        isLoading: false
       });
       throw error;
     }
   },
 
+  /**
+   * Create project from template and set as current project
+   */
   createFromTemplate: async (templateId, name) => {
     set({ isLoading: true, error: null });
     try {
-      const project = await api.createFromTemplate(templateId, name);
-      await get().loadProjects();
-      set({ isLoading: false });
-      return project;
+      const result = await api.createFromTemplate(templateId, name);
+
+      const newProject: Project = {
+        workspaceId: result.workspaceId,
+        name: result.name,
+        created: new Date(),
+        modified: new Date(),
+      };
+
+      set({ currentProject: newProject, isLoading: false });
+      await get().loadFileTree();
     } catch (error) {
-      set({ 
+      set({
         error: error instanceof Error ? error.message : 'Failed to create from template',
-        isLoading: false 
+        isLoading: false
       });
       throw error;
     }
   },
 
+  /**
+   * Import from ZIP and set as current project
+   */
   importFromZip: async (zipFile) => {
     set({ isLoading: true, error: null });
     try {
-      const project = await api.importZip(zipFile);
-      await get().loadProjects();
-      set({ isLoading: false });
-      return project;
+      const result = await api.importZip(zipFile);
+
+      const newProject: Project = {
+        workspaceId: result.workspaceId,
+        name: result.name,
+        created: new Date(),
+        modified: new Date(),
+      };
+
+      set({ currentProject: newProject, isLoading: false });
+      await get().loadFileTree();
     } catch (error) {
-      set({ 
+      set({
         error: error instanceof Error ? error.message : 'Failed to import ZIP',
-        isLoading: false 
+        isLoading: false
       });
       throw error;
     }
   },
 
+  /**
+   * Import from GitHub and set as current project
+   */
   importFromGithub: async (repoUrl, accessToken) => {
     set({ isLoading: true, error: null });
     try {
-      const project = await api.importGithub(repoUrl, accessToken);
-      await get().loadProjects();
-      set({ isLoading: false });
-      return project;
+      const result = await api.importGithub(repoUrl, accessToken);
+
+      const newProject: Project = {
+        workspaceId: result.workspaceId,
+        name: result.name,
+        created: new Date(),
+        modified: new Date(),
+      };
+
+      set({ currentProject: newProject, isLoading: false });
+      await get().loadFileTree();
     } catch (error) {
-      set({ 
+      set({
         error: error instanceof Error ? error.message : 'Failed to import from GitHub',
-        isLoading: false 
+        isLoading: false
       });
       throw error;
     }
   },
 
-  deleteProject: async (workspaceId) => {
+  /**
+   * Close the current project and clear all state
+   */
+  closeProject: async () => {
+    const { currentProject } = get();
+    if (!currentProject) return;
+
     set({ isLoading: true, error: null });
     try {
-      await api.deleteProject(workspaceId);
-      await get().loadProjects();
-      
-      const { currentProject } = get();
-      if (currentProject?.workspaceId === workspaceId) {
-        set({ currentProject: null, fileTree: [] });
-      }
-      
-      set({ isLoading: false });
+      // Optionally delete from backend
+      await api.deleteProject(currentProject.workspaceId);
+
+      set({
+        currentProject: null,
+        fileTree: [],
+        isLoading: false
+      });
     } catch (error) {
-      set({ 
-        error: error instanceof Error ? error.message : 'Failed to delete project',
-        isLoading: false 
+      set({
+        error: error instanceof Error ? error.message : 'Failed to close project',
+        isLoading: false
       });
       throw error;
     }

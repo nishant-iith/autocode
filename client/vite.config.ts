@@ -27,6 +27,11 @@ export default defineConfig({
   },
   server: {
     port: 3000,
+    // Required headers for WebContainer API (SharedArrayBuffer support)
+    headers: {
+      'Cross-Origin-Embedder-Policy': 'require-corp',
+      'Cross-Origin-Opener-Policy': 'same-origin',
+    },
     proxy: {
       '/api': {
         target: 'http://localhost:5000',

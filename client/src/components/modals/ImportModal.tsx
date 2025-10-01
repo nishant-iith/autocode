@@ -19,23 +19,15 @@ const ImportModal: React.FC<ImportModalProps> = ({ onClose, onSuccess }) => {
   const [repoUrl, setRepoUrl] = useState('');
   const [accessToken, setAccessToken] = useState('');
   
-  const { importFromZip, importFromGithub, setCurrentProject } = useProjectStore();
+  const { importFromZip, importFromGithub } = useProjectStore();
 
   const handleZipImport = async () => {
     if (!selectedFile) return;
 
     setIsImporting(true);
     try {
-      const result = await importFromZip(selectedFile);
-      
-      const newProject = {
-        workspaceId: result.workspaceId,
-        name: result.name,
-        created: new Date(),
-        modified: new Date(),
-      };
-      
-      setCurrentProject(newProject);
+      // importFromZip now automatically sets it as current project
+      await importFromZip(selectedFile);
       onSuccess();
     } catch (error) {
       console.error('Failed to import ZIP:', error);
@@ -49,16 +41,8 @@ const ImportModal: React.FC<ImportModalProps> = ({ onClose, onSuccess }) => {
 
     setIsImporting(true);
     try {
-      const result = await importFromGithub(repoUrl.trim(), accessToken.trim() || undefined);
-      
-      const newProject = {
-        workspaceId: result.workspaceId,
-        name: result.name,
-        created: new Date(),
-        modified: new Date(),
-      };
-      
-      setCurrentProject(newProject);
+      // importFromGithub now automatically sets it as current project
+      await importFromGithub(repoUrl.trim(), accessToken.trim() || undefined);
       onSuccess();
     } catch (error) {
       console.error('Failed to import from GitHub:', error);

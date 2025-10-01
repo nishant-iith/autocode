@@ -4,11 +4,12 @@ import { useEditorStore } from './store/editorStore';
 import { useProjectStore } from './store/projectStore';
 import { useEnhancedChatStore } from './store/enhancedChatStore';
 import { useSidebarStore } from './store/sidebarStore';
+import { WebContainerProvider } from './providers/WebContainerProvider';
 import Sidebar from './components/Sidebar';
 import Editor from './components/Editor';
 import TabBar from './components/TabBar';
 import Welcome from './components/Welcome';
-import Preview from './components/Preview';
+import EnhancedPreview from './components/EnhancedPreview';
 import StatusBar from './components/StatusBar';
 import CommandPalette from './components/CommandPalette';
 import SettingsModal from './components/modals/SettingsModal';
@@ -109,7 +110,8 @@ function App() {
   }, [isResizingChat, handleChatResizeMouseMove, handleChatResizeMouseUp]);
 
   return (
-    <div className="flex flex-col h-screen bg-slate-900 text-vscode-text p-4 gap-4">
+    <WebContainerProvider>
+      <div className="flex flex-col h-screen bg-slate-900 text-vscode-text p-4 gap-4">
       <div className="flex flex-1 gap-4 overflow-hidden">
         {/* Main AutoCode Area (Left Side) */}
         <div 
@@ -126,7 +128,7 @@ function App() {
               
               <div className="flex-1 relative">
                 {activeTab === 'preview' ? (
-                  <Preview />
+                  <EnhancedPreview />
                 ) : currentProject && activeFile ? (
                   <Editor />
                 ) : (
@@ -195,7 +197,8 @@ function App() {
           <div className="absolute inset-0 rounded-full bg-gradient-to-r from-blue-500 to-purple-600 animate-ping opacity-20"></div>
         </button>
       )}
-    </div>
+      </div>
+    </WebContainerProvider>
   );
 }
 

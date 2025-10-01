@@ -1,8 +1,7 @@
 import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
-import { Files, Search, Settings, FolderOpen, Eye } from 'lucide-react';
+import { Files, Search, Settings, Eye, X } from 'lucide-react';
 import { throttle } from '../utils/throttle';
 import FileTree from './FileTree';
-import ProjectList from './ProjectList';
 import { useProjectStore } from '../store/projectStore';
 import { useSidebarStore } from '../store/sidebarStore';
 
@@ -10,12 +9,22 @@ interface SidebarProps {
   onOpenSettings?: () => void;
 }
 
+/**
+ * Sidebar component with file explorer and search tabs
+ * Removed projects tab for single-project mode
+ */
 const Sidebar: React.FC<SidebarProps> = ({ onOpenSettings }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [isResizing, setIsResizing] = useState(false);
   const sidebarRef = useRef<HTMLDivElement>(null);
-  const { currentProject } = useProjectStore();
+  const { currentProject, closeProject } = useProjectStore();
   const { activeTab, isCollapsed, width, setActiveTab, setWidth } = useSidebarStore();
+
+  const handleCloseProject = useCallback(async () => {
+    if (confirm('Close this project? Your work will be saved.')) {
+      await closeProject();
+    }
+  }, [closeProject]);
 
   const MIN_WIDTH = 200;
   const MAX_WIDTH = 600;
@@ -32,7 +41,7 @@ const Sidebar: React.FC<SidebarProps> = ({ onOpenSettings }) => {
 
   const handleMouseMove = useCallback((e: MouseEvent) => {
     if (!isResizing) return;
-    
+
     const newWidth = e.clientX - 48; // 48px is the icon bar width
     if (newWidth >= MIN_WIDTH && newWidth <= MAX_WIDTH) {
       throttledSetWidth(newWidth);
@@ -62,7 +71,6 @@ const Sidebar: React.FC<SidebarProps> = ({ onOpenSettings }) => {
   const tabs = [
     { id: 'files' as const, icon: Files, label: 'Files' },
     { id: 'search' as const, icon: Search, label: 'Search' },
-    { id: 'projects' as const, icon: FolderOpen, label: 'Projects' },
     { id: 'preview' as const, icon: Eye, label: 'Preview' },
   ];
 
@@ -77,24 +85,24 @@ const Sidebar: React.FC<SidebarProps> = ({ onOpenSettings }) => {
               relative p-3 transition-all duration-200 ease-out hover-lift
               ${
                 activeTab === tab.id && !isCollapsed
-                  ? 'bg-vscode-border text-white shadow-sm' 
+                  ? 'bg-vscode-border text-white shadow-sm'
                   : 'text-vscode-text-muted hover:text-white hover:bg-vscode-border/70'
               }
             `}
             title={tab.label}
           >
-            <tab.icon 
-              size={20} 
+            <tab.icon
+              size={20}
               className={`transition-all duration-200 ${
                 activeTab === tab.id && !isCollapsed ? 'scale-110' : 'hover:scale-105'
-              }`} 
+              }`}
             />
             {activeTab === tab.id && (
               <div className="absolute left-0 top-0 bottom-0 w-0.5 bg-blue-400 animate-in slide-in-from-left-1 duration-200" />
             )}
           </button>
         ))}
-        
+
         <div className="mt-auto">
           <button
             onClick={onOpenSettings}
@@ -107,20 +115,31 @@ const Sidebar: React.FC<SidebarProps> = ({ onOpenSettings }) => {
       </div>
 
       {!isCollapsed && activeTab && activeTab !== 'preview' && (
-        <div 
+        <div
           ref={sidebarRef}
           className="bg-vscode-sidebar border-r border-vscode-border flex-shrink-0 overflow-hidden relative transition-all duration-200 ease-in-out"
           style={{ width }}
         >
         {activeTab === 'files' && (
-          <div className="h-full animate-in fade-in slide-in-from-right-2 duration-300">
+          <div className="h-full flex flex-col animate-in fade-in slide-in-from-right-2 duration-300">
             <div className="p-4 border-b border-vscode-border bg-gradient-to-r from-vscode-sidebar to-vscode-panel/50">
-              <h2 className="text-sm font-semibold text-vscode-text uppercase tracking-wider flex items-center space-x-2">
-                <Files size={14} className="text-blue-400" />
-                <span>{currentProject ? currentProject.name : 'Explorer'}</span>
-              </h2>
+              <div className="flex items-center justify-between mb-1">
+                <h2 className="text-sm font-semibold text-vscode-text uppercase tracking-wider flex items-center space-x-2">
+                  <Files size={14} className="text-blue-400" />
+                  <span>{currentProject ? currentProject.name : 'Explorer'}</span>
+                </h2>
+                {currentProject && (
+                  <button
+                    onClick={handleCloseProject}
+                    className="p-1.5 hover:bg-red-500/20 rounded text-vscode-text-muted hover:text-red-400 transition-all duration-200"
+                    title="Close Project"
+                  >
+                    <X size={14} />
+                  </button>
+                )}
+              </div>
               {currentProject && (
-                <p className="text-xs text-vscode-text-muted mt-1 truncate">
+                <p className="text-xs text-vscode-text-muted truncate">
                   {currentProject.description || 'No description'}
                 </p>
               )}
@@ -169,13 +188,6 @@ const Sidebar: React.FC<SidebarProps> = ({ onOpenSettings }) => {
           </div>
         )}
 
-        {activeTab === 'projects' && (
-          <div className="animate-in fade-in slide-in-from-right-2 duration-300">
-            <ProjectList />
-          </div>
-        )}
-
-
         {/* Resize Handle */}
         <div
           className={`absolute top-0 right-0 w-1 h-full cursor-col-resize bg-transparent hover:bg-blue-400/20 transition-all duration-200 group ${
@@ -185,8 +197,8 @@ const Sidebar: React.FC<SidebarProps> = ({ onOpenSettings }) => {
           title="Drag to resize sidebar"
         >
           <div className={`absolute right-0 top-1/2 transform -translate-y-1/2 w-0.5 h-8 transition-all duration-200 ${
-            isResizing 
-              ? 'bg-blue-400 h-16' 
+            isResizing
+              ? 'bg-blue-400 h-16'
               : 'bg-vscode-border group-hover:bg-blue-400/50'
           }`} />
         </div>
