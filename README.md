@@ -1,4 +1,4 @@
-# AutoCode - Online Code Editor
+# AutoCode - Online Code Editor (Stable Release)
 
 AutoCode is a powerful, browser-based code editor built with React and Node.js, featuring an integrated AI assistant (AutoChat) powered by OpenRouter. It provides a professional development environment similar to VS Code but accessible from anywhere.
 
