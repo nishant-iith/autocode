@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { Files, Search, Settings, Eye, X } from 'lucide-react';
 import { throttle } from '../utils/throttle';
-import FileTree from './FileTree';
+import VirtualFileTree from './VirtualFileTree';
 import { useProjectStore } from '../store/projectStore';
 import { useSidebarStore } from '../store/sidebarStore';
 
@@ -144,7 +144,7 @@ const Sidebar: React.FC<SidebarProps> = ({ onOpenSettings }) => {
                 </p>
               )}
             </div>
-            <FileTree />
+            <VirtualFileTree />
           </div>
         )}
 
