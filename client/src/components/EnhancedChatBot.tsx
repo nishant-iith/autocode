@@ -4,7 +4,7 @@
  * Integrates with enhanced AI service for advanced capabilities
  */
 
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useMemo, useCallback, memo } from 'react';
 import {
   X,
   Send,
@@ -25,7 +25,7 @@ import { useProjectStore } from '../store/projectStore';
 import ChatMessage from './ChatMessage';
 import { ChatMessage as ChatMessageType } from '../services/openRouter';
 
-const EnhancedChatBot: React.FC = () => {
+const EnhancedChatBot: React.FC = memo(() => {
   const {
     isOpen,
     error,
@@ -83,7 +83,7 @@ const EnhancedChatBot: React.FC = () => {
     }
   }, [isOpen]);
 
-  const handleSendMessage = async (e: React.FormEvent) => {
+  const handleSendMessage = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
     if (!inputMessage.trim() || isTyping) return;
 
@@ -95,16 +95,16 @@ const EnhancedChatBot: React.FC = () => {
     } else {
       await sendMessage(message); // Using same function for now since mode logic is handled in store
     }
-  };
+  }, [inputMessage, isTyping, mode, sendMessage]);
 
-  const handleSetApiKey = async () => {
+  const handleSetApiKey = useCallback(async () => {
     if (apiKeyInput.trim()) {
       await setApiKey(apiKeyInput.trim());
       setApiKeyInput('');
     }
-  };
+  }, [apiKeyInput, setApiKey]);
 
-  const getOperationIcon = (status: string) => {
+  const getOperationIcon = useCallback((status: string) => {
     switch (status) {
       case 'pending': return <Clock size={12} className="text-yellow-400" />;
       case 'running': return <Loader size={12} className="text-blue-400 animate-spin" />;
@@ -112,7 +112,38 @@ const EnhancedChatBot: React.FC = () => {
       case 'failed': return <XCircle size={12} className="text-red-400" />;
       default: return <Clock size={12} className="text-gray-400" />;
     }
-  };
+  }, []);
+
+  // Memoize expensive operations
+  const memoizedMessages = useMemo(() => {
+    return messages.map((message) => ({
+      ...message,
+      // Convert AIMessage to ChatMessageType for compatibility
+      chatMessage: {
+        id: message.id,
+        role: message.role,
+        content: message.content,
+        timestamp: message.timestamp
+      } as ChatMessageType
+    }));
+  }, [messages]);
+
+  const memoizedArtifacts = useMemo(() => {
+    return currentArtifacts.map((artifact) => ({
+      ...artifact,
+      key: artifact.id
+    }));
+  }, [currentArtifacts]);
+
+  const memoizedModels = useMemo(() => {
+    return freeModels.map((model) => ({
+      ...model,
+      key: model.id
+    }));
+  }, [freeModels]);
+
+  const hasArtifacts = memoizedArtifacts.length > 0;
+  const hasMessages = memoizedMessages.length > 0;
 
   if (!isOpen) {
     return (
@@ -306,14 +337,14 @@ const EnhancedChatBot: React.FC = () => {
                   <Loader className="animate-spin" size={14} />
                   <span className="text-xs">Loading models...</span>
                 </div>
-              ) : freeModels.length > 0 ? (
+              ) : memoizedModels.length > 0 ? (
                 <select
                   value={selectedModel || ''}
                   onChange={(e) => selectModel(e.target.value)}
                   className="w-full px-2 py-1 bg-vscode-editor border border-vscode-border rounded text-sm text-vscode-text focus:outline-none focus:border-vscode-accent"
                 >
-                  {freeModels.map((model) => (
-                    <option key={model.id} value={model.id}>
+                  {memoizedModels.map((model) => (
+                    <option key={model.key} value={model.id}>
                       {model.name}
                     </option>
                   ))}
@@ -483,23 +514,15 @@ const EnhancedChatBot: React.FC = () => {
           </div>
         ) : (
           <>
-            {messages.map((message, index) => {
-              // Convert AIMessage to ChatMessageType for compatibility
-              const chatMessage: ChatMessageType = {
-                id: message.id,
-                role: message.role,
-                content: message.content,
-                timestamp: message.timestamp
-              };
-
+            {memoizedMessages.map(({ chatMessage, id: messageId }, index) => {
               return (
-                <div key={message.id} className="relative">
+                <div key={messageId} className="relative">
                   <ChatMessage
                     message={chatMessage}
-                    isLast={index === messages.length - 1}
+                    isLast={index === memoizedMessages.length - 1}
                   />
                   {/* Show streaming indicator on last message when typing */}
-                  {isTyping && index === messages.length - 1 && message.role === 'assistant' && (
+                  {isTyping && index === memoizedMessages.length - 1 && chatMessage.role === 'assistant' && (
                     <div className="absolute bottom-2 right-4">
                       <span className="animate-pulse text-vscode-accent">▊</span>
                     </div>
@@ -531,11 +554,11 @@ const EnhancedChatBot: React.FC = () => {
             )}
 
             {/* Artifacts Display */}
-            {currentArtifacts.length > 0 && (
+            {hasArtifacts && (
               <div className="border border-vscode-border rounded-lg p-4 bg-vscode-panel">
                 <div className="text-sm font-medium text-vscode-text mb-2">Generated Artifacts</div>
-                {currentArtifacts.map((artifact) => (
-                  <div key={artifact.id} className="border-l-2 border-vscode-accent pl-3 mb-3">
+                {memoizedArtifacts.map((artifact) => (
+                  <div key={artifact.key} className="border-l-2 border-vscode-accent pl-3 mb-3">
                     <div className="text-xs font-medium text-vscode-accent">{artifact.title}</div>
                     <div className="text-xs text-vscode-text-muted">{artifact.actions.length} actions</div>
                     {!autoExecuteActions && (
@@ -618,6 +641,8 @@ const EnhancedChatBot: React.FC = () => {
       </div>
     </div>
   );
-};
+});
+
+EnhancedChatBot.displayName = 'EnhancedChatBot';
 
 export default EnhancedChatBot;

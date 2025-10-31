@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect, useMemo } from 'react';
+import { useState, useCallback, useEffect, useMemo, Suspense, lazy } from 'react';
 import { throttle } from './utils/throttle';
 import { useEditorStore } from './store/editorStore';
 import { useProjectStore } from './store/projectStore';
@@ -13,7 +13,9 @@ import EnhancedPreview from './components/EnhancedPreview';
 import StatusBar from './components/StatusBar';
 import CommandPalette from './components/CommandPalette';
 import SettingsModal from './components/modals/SettingsModal';
-import EnhancedChatBot from './components/EnhancedChatBot';
+
+// Lazy load heavy components for better initial load time
+const EnhancedChatBot = lazy(() => import('./components/EnhancedChatBot'));
 import { useAIFileSync } from './services/aiFileSyncService';
 import { useHotkeys } from 'react-hotkeys-hook';
 import { MessageCircle } from 'lucide-react';
@@ -163,11 +165,20 @@ function App() {
             </div>
             
             {/* Chat Panel */}
-            <div 
+            <div
               className="bg-vscode-panel rounded-xl shadow-xl border border-vscode-border/50 overflow-hidden"
               style={{ width: chatWidth }}
             >
-              <EnhancedChatBot />
+              <Suspense fallback={
+                <div className="h-full flex items-center justify-center">
+                  <div className="text-center space-y-4 animate-in fade-in duration-500">
+                    <div className="w-8 h-8 border-2 border-blue-400 border-t-transparent rounded-full animate-spin mx-auto"></div>
+                    <p className="text-sm text-vscode-text-muted">Loading AI Assistant...</p>
+                  </div>
+                </div>
+              }>
+                <EnhancedChatBot />
+              </Suspense>
             </div>
           </div>
         )}

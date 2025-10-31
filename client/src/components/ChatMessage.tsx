@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, memo, useMemo, useCallback } from 'react';
 import { Bot, User, Copy, Check } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
@@ -10,19 +10,19 @@ interface ChatMessageProps {
   isLast?: boolean;
 }
 
-const ChatMessage: React.FC<ChatMessageProps> = ({ message, isLast }) => {
+const ChatMessage: React.FC<ChatMessageProps> = memo(({ message, isLast }) => {
   const [copiedCode, setCopiedCode] = React.useState<string | null>(null);
   const messageRef = useRef<HTMLDivElement>(null);
 
-  const formatTimestamp = (date: Date) => {
+  const formatTimestamp = useCallback((date: Date) => {
     return new Intl.DateTimeFormat('en-US', {
       hour: '2-digit',
       minute: '2-digit',
       hour12: false,
     }).format(date);
-  };
+  }, []);
 
-  const handleCopyCode = async (code: string) => {
+  const handleCopyCode = useCallback(async (code: string) => {
     try {
       await navigator.clipboard.writeText(code);
       setCopiedCode(code);
@@ -30,7 +30,12 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message, isLast }) => {
     } catch (error) {
       console.error('Failed to copy code:', error);
     }
-  };
+  }, []);
+
+  // Memoize formatted timestamp to avoid recalculating on every render
+  const formattedTime = useMemo(() => {
+    return formatTimestamp(message.timestamp);
+  }, [message.timestamp, formatTimestamp]);
 
   // Auto-scroll to bottom when message updates (for streaming)
   useEffect(() => {
@@ -133,7 +138,7 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message, isLast }) => {
             message.role === 'user' ? 'text-blue-100' : 'text-vscode-text-muted'
           }`}
         >
-          {formatTimestamp(message.timestamp)}
+          {formattedTime}
         </div>
       </div>
       {message.role === 'user' && (
@@ -143,6 +148,8 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message, isLast }) => {
       )}
     </div>
   );
-};
+});
+
+ChatMessage.displayName = 'ChatMessage';
 
 export default ChatMessage;

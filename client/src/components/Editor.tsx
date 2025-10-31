@@ -1,6 +1,12 @@
-import React, { useRef, useEffect, useState, useCallback } from 'react';
-import { Editor as MonacoEditor } from '@monaco-editor/react';
+import React, { useRef, useEffect, useState, useCallback, Suspense, lazy } from 'react';
 import { editor } from 'monaco-editor';
+
+// Lazy load Monaco Editor to improve initial bundle size
+const MonacoEditor = lazy(() =>
+  import('@monaco-editor/react').then(module => ({
+    default: module.Editor
+  }))
+);
 import { useEditorStore } from '../store/editorStore';
 import { useProjectStore } from '../store/projectStore';
 import { api } from '../services/api';
@@ -149,10 +155,32 @@ const Editor: React.FC = () => {
     );
   }
 
+  // Monaco Editor Loading Component
+  const MonacoLoadingFallback = () => (
+    <div className="h-full bg-vscode-editor flex items-center justify-center">
+      <div className="text-center space-y-6 animate-in fade-in duration-500">
+        <div className="relative">
+          <div className="w-16 h-16 border-4 border-blue-400/30 border-t-blue-400 rounded-full animate-spin mx-auto"></div>
+          <div className="absolute inset-0 w-16 h-16 border-4 border-transparent border-t-purple-400 rounded-full animate-spin mx-auto" style={{ animationDelay: '0.15s' }}></div>
+        </div>
+        <div className="space-y-2">
+          <h3 className="text-lg font-medium text-vscode-text">Loading Code Editor</h3>
+          <p className="text-sm text-vscode-text-muted">Preparing Monaco Editor...</p>
+        </div>
+        <div className="space-y-1">
+          <div className="w-48 h-2 bg-vscode-border rounded-full overflow-hidden">
+            <div className="h-full bg-gradient-to-r from-blue-400 to-purple-400 rounded-full animate-pulse" style={{ width: '60%', animation: 'pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite' }}></div>
+          </div>
+          <p className="text-xs text-vscode-text-muted/50">Optimizing for performance...</p>
+        </div>
+      </div>
+    </div>
+  );
+
   return (
     <div className="h-full bg-vscode-editor relative overflow-hidden">
-      {/* Loading overlay */}
-      {!editorReady && (
+      {/* Loading overlay for editor initialization */}
+      {!editorReady && activeFile && (
         <div className="absolute inset-0 bg-vscode-editor flex items-center justify-center z-20">
           <div className="text-center space-y-4">
             <div className="w-8 h-8 border-2 border-blue-400 border-t-transparent rounded-full animate-spin mx-auto"></div>
@@ -160,7 +188,9 @@ const Editor: React.FC = () => {
           </div>
         </div>
       )}
-      <MonacoEditor
+
+      <Suspense fallback={<MonacoLoadingFallback />}>
+        <MonacoEditor
         height="100%"
         language={activeFile.language}
         value={activeFile.content}
@@ -194,7 +224,8 @@ const Editor: React.FC = () => {
           codeLens: false,
         }}
       />
-      
+      </Suspense>
+
       {/* Status indicators */}
       <div className="absolute top-3 right-3 flex flex-col space-y-2 z-10">
         {!editorReady && (

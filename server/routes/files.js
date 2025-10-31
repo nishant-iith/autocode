@@ -128,21 +128,37 @@ router.post('/create/:workspaceId', async (req, res) => {
   try {
     const { workspaceId } = req.params;
     const { path: filePath, type, name } = req.body;
-    
-    const fullPath = path.join(req.workspacesDir, workspaceId, filePath, name);
+
+    // Validate inputs
+    if (!workspaceId || !name || !type) {
+      return res.status(400).json({ error: 'Missing required fields' });
+    }
+
+    // Sanitize name to prevent injection
+    const sanitizedName = name.replace(/[^a-zA-Z0-9._-]/g, '');
+    if (!sanitizedName || sanitizedName !== name) {
+      return res.status(400).json({ error: 'Invalid name. Only alphanumeric characters, dots, hyphens, and underscores are allowed' });
+    }
+
+    const fullPath = getSecurePath(req.workspacesDir, workspaceId, filePath ? path.join(filePath, sanitizedName) : sanitizedName);
+
+    if (!fullPath) {
+      return res.status(400).json({ error: 'Invalid file path' });
+    }
     
     if (type === 'folder') {
       await fs.ensureDir(fullPath);
     } else {
       await fs.ensureFile(fullPath);
     }
-    
+
+    const createdPath = filePath ? path.join(filePath, sanitizedName) : sanitizedName;
     req.io.to(`workspace-${workspaceId}`).emit('file-changed', {
-      path: path.join(filePath, name),
+      path: createdPath,
       type: 'created'
     });
-    
-    res.json({ success: true, path: path.join(filePath, name) });
+
+    res.json({ success: true, path: createdPath });
   } catch (error) {
     console.error('Error creating file/folder:', error);
     res.status(500).json({ error: 'Failed to create file/folder' });
@@ -153,7 +169,11 @@ router.delete('/:workspaceId/*', async (req, res) => {
   try {
     const { workspaceId } = req.params;
     const filePath = req.params[0];
-    const fullPath = path.join(req.workspacesDir, workspaceId, filePath);
+    const fullPath = getSecurePath(req.workspacesDir, workspaceId, filePath);
+
+    if (!fullPath) {
+      return res.status(400).json({ error: 'Invalid file path' });
+    }
     
     if (!await fs.pathExists(fullPath)) {
       return res.status(404).json({ error: 'File not found' });
@@ -177,9 +197,23 @@ router.post('/rename/:workspaceId', async (req, res) => {
   try {
     const { workspaceId } = req.params;
     const { oldPath, newPath } = req.body;
-    
-    const oldFullPath = path.join(req.workspacesDir, workspaceId, oldPath);
-    const newFullPath = path.join(req.workspacesDir, workspaceId, newPath);
+
+    // Validate inputs
+    if (!workspaceId || !oldPath || !newPath) {
+      return res.status(400).json({ error: 'Missing required fields' });
+    }
+
+    // Validate path lengths
+    if (oldPath.length > 1000 || newPath.length > 1000) {
+      return res.status(400).json({ error: 'Path too long' });
+    }
+
+    const oldFullPath = getSecurePath(req.workspacesDir, workspaceId, oldPath);
+    const newFullPath = getSecurePath(req.workspacesDir, workspaceId, newPath);
+
+    if (!oldFullPath || !newFullPath) {
+      return res.status(400).json({ error: 'Invalid file path' });
+    }
     
     if (!await fs.pathExists(oldFullPath)) {
       return res.status(404).json({ error: 'File not found' });

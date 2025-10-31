@@ -100,7 +100,7 @@ export const useEnhancedChatStore = create<EnhancedChatState>()(
       error: null,
       mode: 'chat',
 
-      apiKey: OpenRouterService.getApiKey(),
+      apiKey: null, // Will be loaded asynchronously
       isApiKeyValid: false,
 
       availableModels: [],
@@ -157,7 +157,7 @@ export const useEnhancedChatStore = create<EnhancedChatState>()(
         const isValid = OpenRouterService.isValidApiKey(trimmedKey);
 
         if (isValid) {
-          OpenRouterService.setApiKey(trimmedKey);
+          await OpenRouterService.setApiKey(trimmedKey);
 
           // Create enhanced AI service instance
           const aiService = new EnhancedAIService({
@@ -719,14 +719,18 @@ async function executeFileAction(action: any, workspaceId: string, AIFileOperati
 
 // Initialize store with existing API key
 const initializeStore = async () => {
-  const apiKey = OpenRouterService.getApiKey();
-  if (apiKey && OpenRouterService.isValidApiKey(apiKey)) {
-    const store = useEnhancedChatStore.getState();
-    try {
-      await store.setApiKey(apiKey);
-    } catch (error) {
-      console.error('Failed to initialize API key:', error);
+  try {
+    const apiKey = await OpenRouterService.getApiKey();
+    if (apiKey && OpenRouterService.isValidApiKey(apiKey)) {
+      const store = useEnhancedChatStore.getState();
+      try {
+        await store.setApiKey(apiKey);
+      } catch (error) {
+        console.error('Failed to initialize API key:', error);
+      }
     }
+  } catch (error) {
+    console.error('Failed to load API key from secure storage:', error);
   }
 };
 

@@ -58,7 +58,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
   isLoading: false,
   error: null,
   
-  apiKey: OpenRouterService.getApiKey(),
+  apiKey: null, // Will be loaded asynchronously
   isApiKeyValid: false,
   
   availableModels: [],

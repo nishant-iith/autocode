@@ -1,3 +1,5 @@
+import { SecureStorage } from '../utils/secureStorage';
+
 export interface OpenRouterModel {
   id: string;
   name: string;
@@ -60,16 +62,54 @@ export class OpenRouterService {
   private static readonly MODELS_CACHE_KEY = 'openrouter_models_cache';
   private static readonly CACHE_DURATION = 1000 * 60 * 60; // 1 hour
 
-  static getApiKey(): string | null {
-    return localStorage.getItem(this.STORAGE_KEY);
+  /**
+   * Gets the API key from secure storage
+   * Migrates from plaintext storage if needed
+   */
+  static async getApiKey(): Promise<string | null> {
+    try {
+      // First, try to migrate existing plaintext key
+      if (SecureStorage.isSupported()) {
+        await SecureStorage.migrateToSecure(this.STORAGE_KEY, this.STORAGE_KEY);
+        return await SecureStorage.getSecureItem(this.STORAGE_KEY);
+      } else {
+        // Fallback to regular localStorage
+        return localStorage.getItem(this.STORAGE_KEY);
+      }
+    } catch (error) {
+      console.error('Error getting API key:', error);
+      return localStorage.getItem(this.STORAGE_KEY);
+    }
   }
 
-  static setApiKey(apiKey: string): void {
-    localStorage.setItem(this.STORAGE_KEY, apiKey.trim());
+  /**
+   * Sets the API key in secure storage
+   */
+  static async setApiKey(apiKey: string): Promise<void> {
+    try {
+      const trimmedKey = apiKey.trim();
+      if (SecureStorage.isSupported()) {
+        await SecureStorage.setSecureItem(this.STORAGE_KEY, trimmedKey);
+      } else {
+        // Fallback to regular localStorage
+        localStorage.setItem(this.STORAGE_KEY, trimmedKey);
+      }
+    } catch (error) {
+      console.error('Error setting API key:', error);
+      // Fallback to regular localStorage
+      localStorage.setItem(this.STORAGE_KEY, apiKey.trim());
+    }
   }
 
+  /**
+   * Removes the API key from storage
+   */
   static clearApiKey(): void {
-    localStorage.removeItem(this.STORAGE_KEY);
+    if (SecureStorage.isSupported()) {
+      SecureStorage.removeSecureItem(this.STORAGE_KEY);
+    } else {
+      localStorage.removeItem(this.STORAGE_KEY);
+    }
   }
 
   static isValidApiKey(apiKey: string): boolean {
@@ -154,7 +194,7 @@ export class OpenRouterService {
       onChunk?: (chunk: string) => void;
     } = {}
   ): Promise<string> {
-    const apiKey = this.getApiKey();
+    const apiKey = await this.getApiKey();
     if (!apiKey) {
       throw new Error('API key not found. Please configure your OpenRouter API key.');
     }

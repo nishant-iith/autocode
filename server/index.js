@@ -7,6 +7,7 @@ import fs from 'fs-extra';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
+import rateLimit from 'express-rate-limit';
 
 import fileRoutes from './routes/files.js';
 import projectRoutes from './routes/projects.js';
@@ -29,6 +30,24 @@ const io = new Server(server, {
 
 const PORT = process.env.PORT || 5000;
 
+// Rate limiting
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 1000, // Limit each IP to 1000 requests per windowMs
+  message: { error: 'Too many requests from this IP, please try again later.' },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+// Stricter rate limiting for file operations
+const fileOperationLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 200, // Limit each IP to 200 file operations per windowMs
+  message: { error: 'Too many file operations, please try again later.' },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
 // Security headers
 app.use((req, res, next) => {
   res.setHeader('X-Content-Type-Options', 'nosniff');
@@ -37,6 +56,8 @@ app.use((req, res, next) => {
   res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
   next();
 });
+
+app.use(limiter);
 
 app.use(cors({
   origin: ["http://localhost:3000", "http://localhost:3001", "http://localhost:3002", "http://localhost:3003"],
@@ -74,9 +95,9 @@ app.get('/api', (req, res) => {
 });
 
 // API Routes
-app.use('/api/files', fileRoutes);
-app.use('/api/projects', projectRoutes);
-app.use('/api/templates', templateRoutes);
+app.use('/api/files', fileOperationLimiter, fileRoutes);
+app.use('/api/projects', fileOperationLimiter, projectRoutes);
+app.use('/api/templates', fileOperationLimiter, templateRoutes);
 
 /**
  * @swagger
