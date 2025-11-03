@@ -2,952 +2,901 @@
 
 ## Overview
 
-AutoCode follows a modern, scalable architecture that separates concerns while maintaining high performance and security. This chapter explores the architectural decisions, design patterns, and system components that make AutoCode a robust AI-powered code editor.
+AutoCode implements a modern, full-stack architecture that combines web-based development tools with AI assistance. The system is built as a monorepo with a React frontend and Express.js backend, leveraging WebContainer technology for secure code execution directly in the browser. This chapter explores the actual architectural decisions and implementation details based on the real AutoCode codebase.
 
 ## High-Level Architecture
 
-### System Architecture Diagram
+### Actual System Architecture
 
 ```mermaid
 graph TB
-    subgraph "Client Layer"
-        UI[React UI Components]
-        State[State Management<br/>Zustand]
-        Monaco[Monaco Editor]
-        WebContainers[WebContainer API]
+    subgraph "Frontend: React Application (Port 5173)"
+        ReactApp[React 18 + TypeScript]
+        ZustandStores[Zustand State Management]
+        MonacoEditor[Monaco Editor]
+        WebContainer[WebContainer API]
+        OpenRouterClient[OpenRouter Client]
+        SocketIOClient[Socket.IO Client]
     end
 
-    subgraph "API Gateway Layer"
-        Gateway[Express.js API Gateway]
-        Auth[Authentication<br/>JWT]
-        RateLimit[Rate Limiting]
-        CORS[CORS Handler]
+    subgraph "Backend: Express Server (Port 5000)"
+        ExpressServer[Express.js Server]
+        SocketIOServer[Socket.IO Server]
+        FileRoutes[File Management Routes]
+        ProjectRoutes[Project Routes]
+        SwaggerDocs[Swagger API Documentation]
     end
 
-    subgraph "Service Layer"
-        FileService[File Management Service]
-        AIService[AI Integration Service]
-        WebSocketService[Real-time Service]
-        WebContainerService[WebContainer Service]
+    subgraph "WebContainer Runtime"
+        NodeJS[Node.js Runtime]
+        FileSystem[Virtual File System]
+        NPM[Package Manager]
+        DevServer[Development Server]
     end
 
     subgraph "External Services"
-        OpenRouter[OpenRouter API<br/>AI Models]
-        WebContainerAPI[WebContainer API<br/>StackBlitz]
-        FileSystem[File System<br/>Storage]
+        OpenRouterAPI[OpenRouter API<br/>Multiple AI Models]
+        BrowserStorage[Browser Storage<br/>Local State]
     end
 
-    subgraph "Data Layer"
-        Workspace[Workspace Data]
-        UserSessions[Session Store]
-        Cache[Redis Cache]
+    subgraph "File Storage"
+        Workspaces[Workspace Files]
+        UserFiles[User Generated Content]
+        Templates[Project Templates]
     end
 
-    UI --> State
-    UI --> Monaco
-    UI --> WebContainers
-    State --> Gateway
-    Monaco --> Gateway
-    WebContainers --> Gateway
+    ReactApp --> ZustandStores
+    ReactApp --> MonacoEditor
+    ReactApp --> WebContainer
+    ReactApp --> OpenRouterClient
+    ReactApp --> SocketIOClient
 
-    Gateway --> Auth
-    Gateway --> RateLimit
-    Gateway --> CORS
+    WebContainer --> NodeJS
+    WebContainer --> FileSystem
+    WebContainer --> NPM
+    WebContainer --> DevServer
 
-    Gateway --> FileService
-    Gateway --> AIService
-    Gateway --> WebSocketService
-    Gateway --> WebContainerService
+    SocketIOClient -.->|WebSocket| SocketIOServer
+    OpenRouterClient --> OpenRouterAPI
+    ExpressServer --> FileRoutes
+    ExpressServer --> ProjectRoutes
+    ExpressServer --> SwaggerDocs
 
-    AIService --> OpenRouter
-    WebContainerService --> WebContainerAPI
-    FileService --> FileSystem
-    WebSocketService --> UserSessions
+    FileRoutes --> Workspaces
+    ProjectRoutes --> UserFiles
+    ZustandStores --> BrowserStorage
 
-    FileService --> Workspace
-    AIService --> Cache
-    WebContainerService --> Cache
-
-    style UI fill:#e1f5fe
-    style State fill:#e8f5e8
-    style Gateway fill:#fff3e0
-    style AIService fill:#f3e5f5
-    style WebContainerService fill:#e8f5e8
-    style OpenRouter fill:#ffebee
-    style WebContainerAPI fill:#e8f5e8
+    style ReactApp fill:#61DAFB,color:#fff
+    style ExpressServer fill:#68A063,color:#fff
+    style WebContainer fill:#007ACC,color:#fff
+    style OpenRouterAPI fill:#FF6B35,color:#fff
+    style SocketIOServer fill:#010101,color:#fff
 ```
 
-### Architectural Principles
+### Core Architectural Principles
 
-1. **Separation of Concerns**: Each layer has distinct responsibilities
-2. **Scalability**: Horizontal scaling with microservices architecture
-3. **Security**: Sandboxed execution and secure API communication
-4. **Performance**: Optimized for real-time collaboration and AI interactions
-5. **Maintainability**: Clean code architecture with comprehensive testing
+1. **Browser-First Development**: Code execution and development happen entirely in the browser using WebContainer
+2. **Real-Time Collaboration**: Socket.IO enables live file synchronization and multi-user editing
+3. **AI-Powered Development**: OpenRouter integration provides context-aware AI assistance throughout the coding process
+4. **Monorepo Structure**: Unified codebase with shared tooling and concurrent development servers
+5. **Component-Based Architecture**: Modular React components with clear separation of concerns
+6. **Singleton WebContainer Pattern**: Ensures exactly one WebContainer instance per browser tab
 
 ## Frontend Architecture
 
-### Component Architecture
+### React Application Structure
+
+The frontend is built with React 18, TypeScript, and Vite, following a component-based architecture:
 
 ```mermaid
 graph TD
-    subgraph "Application Shell"
-        App[App.tsx]
-        Router[React Router]
-        Layout[Layout Components]
-        Theme[Theme Provider]
+    subgraph "App Shell: App.tsx"
+        MainApp[Main App Component]
+        WebContainerProvider[WebContainerProvider]
+        EnhancedChatBot[Enhanced ChatBot]
     end
 
-    subgraph "Core Features"
-        Editor[Code Editor]
-        FileTree[File Explorer]
-        Terminal[Terminal Component]
-        ChatBot[AI Chat Assistant]
+    subgraph "Core Components"
+        Editor[Monaco Editor Component]
+        FileExplorer[Sidebar File Explorer]
+        SettingsModal[Settings Modal]
+        ModelSelector[Model Selector]
     end
 
-    subgraph "UI Components"
-        Button[Button Components]
-        Modal[Modal/Dialog]
-        Toast[Notifications]
-        Tooltip[Tooltips]
-        Loading[Loading States]
-    end
-
-    subgraph "State Management"
-        EditorStore[Editor State]
-        FileStore[File System State]
-        ChatStore[Chat/AI State]
-        UserStore[User Settings]
-        UIStore[UI State]
+    subgraph "State Management: Zustand"
+        EnhancedChatStore[enhancedChatStore.ts]
+        EditorStore[editorStore.ts]
+        ProjectStore[projectStore.ts]
+        SidebarStore[sidebarStore.ts]
     end
 
     subgraph "Services"
-        APIService[API Client]
-        WebSocketService[WebSocket Client]
-        StorageService[Local Storage]
-        AIService[AI Service Client]
+        OpenRouterService[OpenRouter Service]
+        EnhancedAIService[Enhanced AI Service]
+        AIFileOperations[AI File Operations]
+        WebContainerServices[WebContainer Services]
     end
 
-    App --> Router
-    App --> Layout
-    App --> Theme
-    Router --> Editor
-    Router --> FileTree
-    Router --> Terminal
-    Router --> ChatBot
+    subgraph "Providers"
+        WebContainerContext[WebContainer Context]
+        ThemeProvider[Theme Provider]
+        ReactProvider[React Context Providers]
+    end
 
+    MainApp --> WebContainerProvider
+    WebContainerProvider --> EnhancedChatBot
+    MainApp --> Editor
+    MainApp --> FileExplorer
+
+    EnhancedChatBot --> EnhancedChatStore
     Editor --> EditorStore
-    FileTree --> FileStore
-    ChatBot --> ChatStore
-    Layout --> UIStore
+    FileExplorer --> SidebarStore
+    FileExplorer --> ProjectStore
 
-    EditorStore --> APIService
-    ChatStore --> AIService
-    FileStore --> StorageService
+    EnhancedChatStore --> OpenRouterService
+    EnhancedChatStore --> EnhancedAIService
+    EnhancedChatStore --> AIFileOperations
 
-    style App fill:#4CAF50,color:#fff
-    style Editor fill:#2196F3,color:#fff
-    style ChatBot fill:#9C27B0,color:#fff
-    style EditorStore fill:#FF9800,color:#fff
-    style AIService fill:#E91E63,color:#fff
+    WebContainerProvider --> WebContainerContext
+    WebContainerContext --> WebContainerServices
+
+    OpenRouterService --> ReactProvider
+
+    style MainApp fill:#61DAFB,color:#fff
+    style WebContainerProvider fill:#007ACC,color:#fff
+    style EnhancedChatBot fill:#FF6B35,color:#fff
+    style EnhancedChatStore fill:#9C27B0,color:#fff
+    style OpenRouterService fill:#4CAF50,color:#fff
 ```
 
-### State Management Pattern
+### Actual Zustand State Management Architecture
 
-AutoCode uses Zustand for state management with a store-based architecture:
+AutoCode uses Zustand with four specialized stores based on the actual implementation:
 
 ```mermaid
 graph LR
-    subgraph "Zustand Stores"
-        Editor[Editor Store]
-        Files[File Store]
-        Chat[Chat Store]
-        Settings[Settings Store]
-        Collaboration[Collaboration Store]
+    subgraph "Zustand Stores (client/src/store/)"
+        EnhancedChatStore[enhancedChatStore.ts<br/>Chat & AI State]
+        EditorStore[editorStore.ts<br/>Editor Configuration]
+        ProjectStore[projectStore.ts<br/>Project Management]
+        SidebarStore[sidebarStore.ts<br/>File Explorer State]
     end
 
-    subgraph "Store Features"
-        Slice1[State Management]
-        Slice2[Actions/Mutations]
-        Slice3[Selectors]
-        Slice4[Persistence]
-        Slice5[Subscriptions]
+    subgraph "Enhanced Chat Store Features"
+        ChatMessages[Chat Messages<br/>Streaming Support]
+        ModelConfig[AI Model Configuration<br/>OpenRouter Integration]
+        FileOperations[AI File Operations<br/>Create/Modify/Delete]
+        ContextManagement[Context Building<br/>File & Project Awareness]
     end
 
-    subgraph "Component Integration"
-        React[React Components]
-        Hooks[Custom Hooks]
-        Context[Context Providers]
+    subgraph "Editor Store Features"
+        EditorSettings[Monaco Settings<br/>Theme, Language, etc.]
+        TabManagement[Multi-tab Support<br/>File Management]
+        ContentState[Editor Content<br/>Auto-save Support]
     end
 
-    Editor --> Slice1
-    Files --> Slice2
-    Chat --> Slice3
-    Settings --> Slice4
-    Collaboration --> Slice5
+    subgraph "Project Store Features"
+        Workspace[Workspace Management<br/>Project Templates]
+        FileTree[File Structure<br/>Hierarchical Organization]
+        ProjectSettings[Project Configuration<br/>Build Settings]
+    end
 
-    Slice1 --> Hooks
-    Slice2 --> Hooks
-    Slice3 --> Hooks
-    Slice4 --> Hooks
-    Slice5 --> Hooks
+    subgraph "Sidebar Store Features"
+        FileExplorer[File Tree State<br/>Expanded/Collapsed]
+        Navigation[Navigation State<br/>Active File Tracking]
+        UIState[Sidebar UI State<br/>Width, Visibility]
+    end
 
-    Hooks --> React
-    React --> Context
+    EnhancedChatStore --> ChatMessages
+    EnhancedChatStore --> ModelConfig
+    EnhancedChatStore --> FileOperations
+    EnhancedChatStore --> ContextManagement
 
-    style Editor fill:#e1f5fe
-    style Files fill:#e8f5e8
-    style Chat fill:#f3e5f5
-    style Settings fill:#fff3e0
-    style Collaboration fill:#ffebee
+    EditorStore --> EditorSettings
+    EditorStore --> TabManagement
+    EditorStore --> ContentState
+
+    ProjectStore --> Workspace
+    ProjectStore --> FileTree
+    ProjectStore --> ProjectSettings
+
+    SidebarStore --> FileExplorer
+    SidebarStore --> Navigation
+    SidebarStore --> UIState
+
+    style EnhancedChatStore fill:#9C27B0,color:#fff
+    style EditorStore fill:#2196F3,color:#fff
+    style ProjectStore fill:#FF9800,color:#fff
+    style SidebarStore fill:#4CAF50,color:#fff
 ```
 
-### Component Design Patterns
+### AI Integration Architecture
 
-#### 1. Compound Components Pattern
+```mermaid
+graph TB
+    subgraph "AI Services Layer"
+        OpenRouterAPI[OpenRouter API Service]
+        EnhancedAI[Enhanced AI Service]
+        AIFileOps[AI File Operations]
+        StreamingHandler[Streaming Response Handler]
+    end
 
-```typescript
-// Example: Code Editor Compound Component
-const CodeEditor = ({ children, ...props }) => {
-  const [state, setState] = useState(initialState);
+    subgraph "Context Management"
+        FileContext[File Context Builder]
+        ProjectContext[Project Context]
+        ChatHistory[Chat History Manager]
+        ModelSelection[Model Selection Logic]
+    end
 
-  return (
-    <EditorContext.Provider value={{ state, setState }}>
-      <div className="code-editor">
-        {children}
-      </div>
-    </EditorContext.Provider>
-  );
-};
+    subgraph "AI Features"
+        CodeGeneration[Code Generation]
+        ErrorResolution[Error Resolution]
+        FileModification[File Modification]
+        CodeExplanation[Code Explanation]
+    end
 
-CodeEditor.Toolbar = EditorToolbar;
-CodeEditor.Content = EditorContent;
-CodeEditor.StatusBar = EditorStatusBar;
-CodeEditor.Sidebar = EditorSidebar;
+    subgraph "Model Support"
+        GPT4[GPT-4]
+        Claude[Claude]
+        Mistral[Mistral Models]
+        OpenSource[Open Source Models]
+    end
 
-// Usage:
-<CodeEditor>
-  <CodeEditor.Toolbar />
-  <CodeEditor.Content />
-  <CodeEditor.StatusBar />
-</CodeEditor>
+    OpenRouterAPI --> EnhancedAI
+    EnhancedAI --> AIFileOps
+    EnhancedAI --> StreamingHandler
+
+    EnhancedAI --> FileContext
+    EnhancedAI --> ProjectContext
+    EnhancedAI --> ChatHistory
+    EnhancedAI --> ModelSelection
+
+    EnhancedAI --> CodeGeneration
+    EnhancedAI --> ErrorResolution
+    AIFileOps --> FileModification
+    EnhancedAI --> CodeExplanation
+
+    OpenRouterAPI --> GPT4
+    OpenRouterAPI --> Claude
+    OpenRouterAPI --> Mistral
+    OpenRouterAPI --> OpenSource
+
+    style OpenRouterAPI fill:#FF6B35,color:#fff
+    style EnhancedAI fill:#9C27B0,color:#fff
+    style AIFileOps fill:#4CAF50,color:#fff
+    style StreamingHandler fill:#2196F3,color:#fff
 ```
 
-#### 2. Render Props Pattern
+### Actual Component Implementation Patterns
+
+#### 1. WebContainer Singleton Pattern (WebContainerProvider.tsx)
 
 ```typescript
-// Example: File Explorer with Render Props
-const FileExplorer = ({ children }) => {
-  const [files, setFiles] = useState([]);
-  const [selectedFile, setSelectedFile] = useState(null);
-
-  return children({
-    files,
-    selectedFile,
-    onSelectFile: setSelectedFile,
-    onCreateFile: createFile,
-    onDeleteFile: deleteFile,
-    onRenameFile: renameFile
-  });
-};
-
-// Usage:
-<FileExplorer>
-  {({ files, selectedFile, onSelectFile }) => (
-    <div>
-      {files.map(file => (
-        <FileItem
-          key={file.id}
-          file={file}
-          selected={selectedFile?.id === file.id}
-          onClick={() => onSelectFile(file)}
-        />
-      ))}
-    </div>
-  )}
-</FileExplorer>
-```
-
-#### 3. Custom Hooks Pattern
-
-```typescript
-// Example: Use AI Chat Hook
-const useAIChat = (apiKey, model) => {
-  const [messages, setMessages] = useState([]);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState(null);
-
-  const sendMessage = useCallback(async (content) => {
-    setIsLoading(true);
-    setError(null);
-
-    try {
-      const response = await fetch('/api/ai/chat', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ content, model })
-      });
-
-      const data = await response.json();
-      setMessages(prev => [...prev, data]);
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setIsLoading(false);
+// Actual WebContainer singleton implementation
+class WebContainerSingleton {
+  static async getInstance(): Promise<WebContainer> {
+    // If already booted globally, return existing instance
+    if (window.__WEBCONTAINER_INSTANCE__) {
+      return window.__WEBCONTAINER_INSTANCE__;
     }
-  }, [apiKey, model]);
 
-  return { messages, sendMessage, isLoading, error };
-};
+    // If boot in progress globally, wait for it
+    if (window.__WEBCONTAINER_BOOT_PROMISE__) {
+      return window.__WEBCONTAINER_BOOT_PROMISE__;
+    }
+
+    // Start boot process with global state management
+    window.__WEBCONTAINER_BOOTING__ = true;
+    window.__WEBCONTAINER_BOOT_PROMISE__ = (async () => {
+      const instance = await WebContainer.boot();
+      window.__WEBCONTAINER_INSTANCE__ = instance;
+      window.__WEBCONTAINER_BOOTING__ = false;
+      return instance;
+    })();
+
+    return window.__WEBCONTAINER_BOOT_PROMISE__;
+  }
+}
+```
+
+#### 2. OpenRouter Service Pattern (openRouter.ts)
+
+```typescript
+// Actual OpenRouter service with caching and streaming
+export class OpenRouterService {
+  static async sendMessage(
+    model: string,
+    messages: ChatMessage[],
+    options: {
+      maxTokens?: number;
+      temperature?: number;
+      stream?: boolean;
+      onChunk?: (chunk: string) => void;
+    } = {}
+  ): Promise<string> {
+    // Handle streaming responses
+    if (options.stream && response.body) {
+      return this.handleStreamingResponse(response, options.onChunk);
+    }
+
+    // Regular response handling
+    const data = await response.json();
+    return data.choices[0].message.content;
+  }
+}
+```
+
+#### 3. Zustand Store Pattern (enhancedChatStore.ts)
+
+```typescript
+// Actual Zustand store implementation
+interface ChatState {
+  // State
+  messages: ChatMessage[];
+  isLoading: boolean;
+  model: string;
+  apiKey: string | null;
+
+  // Actions
+  sendMessage: (content: string) => Promise<void>;
+  setModel: (model: string) => void;
+  setApiKey: (apiKey: string) => void;
+  clearMessages: () => void;
+}
+
+export const useChatStore = create<ChatState>((set, get) => ({
+  messages: [],
+  isLoading: false,
+  model: 'gpt-3.5-turbo',
+  apiKey: OpenRouterService.getApiKey(),
+
+  sendMessage: async (content: string) => {
+    // Implementation with streaming support
+  }
+}));
 ```
 
 ## Backend Architecture
 
-### Microservices Design
+### Express.js Server Implementation
+
+The backend is a single Express.js server (not microservices) with a modular structure:
 
 ```mermaid
 graph TB
-    subgraph "API Gateway"
-        Gateway[Express Gateway<br/>Port: 3001]
-        Auth[Authentication Middleware]
-        RateLimit[Rate Limiting]
-        CORS[CORS Handler]
-        Logging[Request Logging]
+    subgraph "Express Server (Port 5000)"
+        MainServer[index.js<br/>Main Server File]
+        Security[Security Middleware<br/>CORS, Headers]
+        FileRoutes[/api/files<br/>File Management]
+        ProjectRoutes[/api/projects<br/>Project Management]
+        TemplateRoutes[/api/templates<br/>Project Templates]
+        Swagger[Swagger Documentation<br/>API Docs]
     end
 
-    subgraph "Core Services"
-        FileService[File Management Service<br/>Port: 3002]
-        AIService[AI Integration Service<br/>Port: 3003]
-        CollabService[Collaboration Service<br/>Port: 3004]
-        WebContainerService[WebContainer Service<br/>Port: 3005]
+    subgraph "Real-time Features"
+        SocketIOServer[Socket.IO Server<br/>Real-time Collaboration]
+        WebSocketEvents[WebSocket Events<br/>File Sync, Join Workspace]
     end
 
-    subgraph "Support Services"
-        UserService[User Management Service<br/>Port: 3006]
-        NotificationService[Notification Service<br/>Port: 3007]
-        AnalyticsService[Analytics Service<br/>Port: 3008]
+    subgraph "File Storage"
+        WorkspacesDir[workspaces/<br/>User Workspaces]
+        FileSystem[fs-extra<br/>File Operations]
+        FileUpload[Multer<br/>File Upload Handler]
     end
 
-    subgraph "Data Stores"
-        PostgreSQL[(PostgreSQL<br/>Primary DB)]
-        Redis[(Redis<br/>Cache & Sessions)]
-        FileSystem[(File System<br/>User Files)]
-        Logs[(Log Storage)]
+    subgraph "API Documentation"
+        SwaggerUI[Swagger UI<br/>/api-docs]
+        APIDocs[Interactive API<br/>Documentation]
+        HealthCheck[Health Endpoint<br/>/api/health]
     end
 
-    Gateway --> Auth
-    Auth --> RateLimit
-    RateLimit --> CORS
-    CORS --> Logging
+    MainServer --> Security
+    MainServer --> FileRoutes
+    MainServer --> ProjectRoutes
+    MainServer --> TemplateRoutes
+    MainServer --> Swagger
 
-    Logging --> FileService
-    Logging --> AIService
-    Logging --> CollabService
-    Logging --> WebContainerService
+    MainServer --> SocketIOServer
+    SocketIOServer --> WebSocketEvents
 
-    FileService --> PostgreSQL
-    FileService --> FileSystem
+    FileRoutes --> WorkspacesDir
+    ProjectRoutes --> WorkspacesDir
+    WorkspacesDir --> FileSystem
+    FileRoutes --> FileUpload
 
-    AIService --> Redis
-    AIService --> PostgreSQL
+    Swagger --> SwaggerUI
+    Swagger --> APIDocs
+    MainServer --> HealthCheck
 
-    CollabService --> Redis
-    CollabService --> PostgreSQL
-
-    WebContainerService --> Redis
-    WebContainerService --> FileSystem
-
-    style Gateway fill:#4CAF50,color:#fff
-    style FileService fill:#2196F3,color:#fff
-    style AIService fill:#9C27B0,color:#fff
-    style CollabService fill:#FF9800,color:#fff
-    style WebContainerService fill:#E91E63,color:#fff
+    style MainServer fill:#68A063,color:#fff
+    style FileRoutes fill:#2196F3,color:#fff
+    style SocketIOServer fill:#010101,color:#fff
+    style WorkspacesDir fill:#FF9800,color:#fff
+    style SwaggerUI fill:#4CAF50,color:#fff
 ```
 
-### Service Communication Patterns
+### Actual API Structure and Communication
 
-#### 1. REST API Communication
+#### 1. REST API Implementation (server/index.js)
 
-```mermaid
-sequenceDiagram
-    participant Client
-    participant Gateway
-    participant FileService
-    participant Database
+```typescript
+// Actual Express server setup
+const app = express();
+const server = createServer(app);
+const io = new Server(server, {
+  cors: {
+    origin: ["http://localhost:3000", "http://localhost:5173"],
+    methods: ["GET", "POST", "PUT", "DELETE"]
+  }
+});
 
-    Client->>Gateway: GET /api/files
-    Gateway->>Gateway: Auth + Rate Limit Check
-    Gateway->>FileService: Forward Request
-    FileService->>Database: Query Files
-    Database-->>FileService: Return Files
-    FileService-->>Gateway: Files Data
-    Gateway-->>Client: JSON Response
+// Security middleware
+app.use((req, res, next) => {
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('X-Frame-Options', 'DENY');
+  res.setHeader('X-XSS-Protection', '1; mode=block');
+  next();
+});
+
+// CORS configuration
+app.use(cors({
+  origin: ["http://localhost:3000", "http://localhost:5173"],
+  credentials: true
+}));
 ```
 
-#### 2. WebSocket Communication
+#### 2. Socket.IO Real-time Communication
 
-```mermaid
-sequenceDiagram
-    participant Client1
-    participant Client2
-    participant Gateway
-    participant CollabService
-    participant Redis
+```typescript
+// Actual Socket.IO implementation
+io.on('connection', (socket) => {
+  console.log('Client connected:', socket.id);
 
-    Client1->>Gateway: WebSocket Connect
-    Gateway->>CollabService: Join Room
-    CollabService->>Redis: Subscribe to Room
+  socket.on('join-workspace', (workspaceId) => {
+    socket.join(`workspace-${workspaceId}`);
+    console.log(`Client ${socket.id} joined workspace ${workspaceId}`);
+  });
 
-    Client2->>Gateway: WebSocket Connect
-    Gateway->>CollabService: Join Room
-    CollabService->>Redis: Subscribe to Room
+  socket.on('file-change', (data) => {
+    socket.to(`workspace-${data.workspaceId}`).emit('file-changed', data);
+  });
 
-    Client1->>Gateway: Edit File
-    Gateway->>CollabService: Broadcast Change
-    CollabService->>Redis: Publish to Room
-    Redis-->>CollabService: Notify Subscribers
-    CollabService-->>Client2: Real-time Update
+  socket.on('disconnect', () => {
+    console.log('Client disconnected:', socket.id);
+  });
+});
 ```
 
-#### 3. Service-to-Service Communication
-
-```mermaid
-graph LR
-    subgraph "Internal Communication"
-        FileSvc[File Service]
-        AISvc[AI Service]
-        WebContainerSvc[WebContainer Service]
-    end
-
-    subgraph "Communication Methods"
-        REST[REST API]
-        Events[Event Bus]
-        Queue[Message Queue]
-    end
-
-    subgraph "External Services"
-        OpenRouter[OpenRouter API]
-        WebContainerAPI[WebContainer API]
-    end
-
-    FileSvc --> REST
-    AISvc --> Events
-    WebContainerSvc --> Queue
-
-    REST --> OpenRouter
-    Events --> WebContainerAPI
-    Queue --> OpenRouter
-
-    style FileSvc fill:#e1f5fe
-    style AISvc fill:#f3e5f5
-    style WebContainerSvc fill:#e8f5e8
-```
-
-## Data Architecture
-
-### Database Schema Design
-
-```mermaid
-erDiagram
-    User {
-        uuid id PK
-        string email UK
-        string username UK
-        string password_hash
-        string avatar_url
-        json preferences
-        timestamp created_at
-        timestamp updated_at
-    }
-
-    Workspace {
-        uuid id PK
-        uuid owner_id FK
-        string name
-        string description
-        json settings
-        boolean is_public
-        timestamp created_at
-        timestamp updated_at
-    }
-
-    File {
-        uuid id PK
-        uuid workspace_id FK
-        string name
-        string path
-        text content
-        string language
-        json metadata
-        timestamp created_at
-        timestamp updated_at
-    }
-
-    ChatSession {
-        uuid id PK
-        uuid workspace_id FK
-        uuid user_id FK
-        string model
-        json messages
-        timestamp created_at
-        timestamp updated_at
-    }
-
-    CollaborationSession {
-        uuid id PK
-        uuid workspace_id FK
-        json participants
-        json cursor_positions
-        json active_files
-        timestamp created_at
-        timestamp last_activity
-    }
-
-    User ||--o{ Workspace : owns
-    User ||--o{ ChatSession : creates
-    Workspace ||--o{ File : contains
-    Workspace ||--o{ ChatSession : hosts
-    Workspace ||--|| CollaborationSession : enables
-```
-
-### Caching Strategy
+#### 3. File Storage Architecture
 
 ```mermaid
 graph TB
-    subgraph "Cache Layers"
-        Browser[Browser Cache<br/>Static Assets]
-        CDN[CDN Cache<br/>Global Distribution]
-        Redis[Redis Cache<br/>Application Cache]
-        Memory[In-Memory Cache<br/>Frequent Data]
+    subgraph "File System Structure"
+        ServerRoot[server/]
+        Workspaces[workspaces/<br/>User Workspaces]
+        Templates[templates/<br/>Project Templates]
+        Routes[src/routes/<br/>API Routes]
+        Views[src/views/<br/>HTML Views]
     end
 
-    subgraph "Cache Types"
-        Static[Static Files<br/>JS, CSS, Images]
-        API[API Responses<br/>File Lists, User Data]
-        Session[Session Data<br/>Auth Tokens, Preferences]
-        AI[AI Responses<br/>Chat History, Suggestions]
+    subgraph "File Management Routes"
+        FilesRoute[/api/files<br/>CRUD Operations]
+        ProjectsRoute[/api/projects<br/>Project Management]
+        TemplatesRoute[/api/templates<br/>Template Access]
     end
 
-    subgraph "Cache Strategies"
-        TTL[Time-to-Live<br/>Auto-expiry]
-        LRU[Least Recently Used<br/>Memory Management]
-        WriteThrough[Write-through<br/>Immediate Sync]
-        LazyLoad[Lazy Loading<br/>On-demand Fetch]
+    subgraph "File Operations"
+        Create[Create Files/Directories]
+        Read[Read File Content]
+        Update[Update File Content]
+        Delete[Delete Files/Directories]
+        Upload[File Upload<br/>Multer Handler]
     end
 
-    Browser --> Static
-    CDN --> Static
-    Redis --> API
-    Redis --> Session
-    Redis --> AI
-    Memory --> API
-    Memory --> Session
+    Workspaces --> FilesRoute
+    Templates --> TemplatesRoute
+    Workspaces --> Create
+    Workspaces --> Read
+    Workspaces --> Update
+    Workspaces --> Delete
 
-    Static --> TTL
-    API --> LRU
-    Session --> WriteThrough
-    AI --> LazyLoad
+    FilesRoute --> Upload
+    ProjectsRoute --> Workspaces
 
-    style Browser fill:#e1f5fe
-    style CDN fill:#e8f5e8
-    style Redis fill:#f3e5f5
-    style Memory fill:#fff3e0
+    style ServerRoot fill:#68A063,color:#fff
+    style Workspaces fill:#FF9800,color:#fff
+    style FilesRoute fill:#2196F3,color:#fff
+    style Upload fill:#4CAF50,color:#fff
+```
+
+## Data and Storage Architecture
+
+### Browser-Based Storage Strategy
+
+AutoCode uses browser storage rather than traditional databases:
+
+```mermaid
+graph TB
+    subgraph "Browser Storage"
+        LocalStorage[localStorage<br/>API Keys, Preferences]
+        SessionStorage[sessionStorage<br/>Temporary State]
+        IndexedDB[IndexedDB<br/>Large File Storage]
+        CacheAPI[Cache API<br/>Static Assets]
+    end
+
+    subgraph "Server File Storage"
+        Workspaces[server/workspaces/<br/>User Projects]
+        Templates[server/templates/<br/>Project Templates]
+        FileSystem[fs-extra<br/>File Operations]
+    end
+
+    subgraph "State Management"
+        Zustand[Zustand Stores<br/>In-Memory State]
+        ReactState[React State<br/>Component State]
+        ContextAPI[React Context<br/>Global State]
+    end
+
+    subgraph "Real-time Sync"
+        SocketIO[Socket.IO<br/>Real-time Updates]
+        WebSocketEvents[WebSocket Events<br/>File Synchronization]
+    end
+
+    LocalStorage --> Zustand
+    SessionStorage --> ReactState
+    Zustand --> ContextAPI
+    Workspaces --> FileSystem
+
+    SocketIO --> WebSocketEvents
+    WebSocketEvents --> Zustand
+
+    IndexedDB --> CacheAPI
+    CacheAPI --> LocalStorage
+
+    style LocalStorage fill:#FF9800,color:#fff
+    style Workspaces fill:#2196F3,color:#fff
+    style Zustand fill:#9C27B0,color:#fff
+    style SocketIO fill:#010101,color:#fff
+```
+
+### Workspace File Structure
+
+```mermaid
+graph TD
+    subgraph "Workspace Directory Structure"
+        WorkspaceRoot[workspace-12345/]
+        SrcFolder[src/]
+        ComponentsFolder[components/]
+        ServicesFolder[services/]
+        PackageJson[package.json]
+        ReadmeFile[README.md]
+    end
+
+    subgraph "File Management Features"
+        FileTree[File Tree View<br/>Hierarchical Display]
+        DragDrop[Drag & Drop<br/>File Organization]
+        MultiSelect[Multi-Select<br/>Batch Operations]
+        Search[File Search<br/>Quick Access]
+    end
+
+    subgraph "File Operations"
+        Create[Create New File]
+        Rename[Rename File]
+        Delete[Delete File]
+        Copy[Copy File]
+        Move[Move File]
+    end
+
+    WorkspaceRoot --> SrcFolder
+    WorkspaceRoot --> PackageJson
+    SrcFolder --> ComponentsFolder
+    SrcFolder --> ServicesFolder
+
+    FileTree --> DragDrop
+    FileTree --> MultiSelect
+    FileTree --> Search
+
+    DragDrop --> Create
+    MultiSelect --> Delete
+    Search --> Copy
+    Search --> Move
+
+    style WorkspaceRoot fill:#4CAF50,color:#fff
+    style FileTree fill:#2196F3,color:#fff
+    style Create fill:#FF9800,color:#fff
+    style PackageJson fill:#9C27B0,color:#fff
 ```
 
 ## Security Architecture
 
-### Security Layers
+### Browser Security and Sandboxing
+
+AutoCode leverages browser security features and WebContainer isolation:
 
 ```mermaid
 graph TB
-    subgraph "Network Security"
-        WAF[Web Application Firewall]
-        DDoS[DDoS Protection]
-        SSL[SSL/TLS Encryption]
-        CDN[CDN Protection]
-    end
-
-    subgraph "Application Security"
-        Auth[Authentication<br/>JWT Tokens]
-        AuthZ[Authorization<br/>RBAC]
-        RateLimit[Rate Limiting]
-        InputValidation[Input Validation]
-        CSRF[CSRF Protection]
-    end
-
-    subgraph "Data Security"
-        Encryption[Data Encryption<br/>At Rest & In Transit]
-        Hashing[Password Hashing<br/>bcrypt]
-        Sanitization[Data Sanitization]
-        Backup[Secure Backups]
+    subgraph "Browser Security Features"
+        WebContainer[WebContainer<br/>Sandboxed Environment]
+        CORS[CORS Protection<br/>Cross-Origin Security]
+        SecurityHeaders[Security Headers<br/>XSS Protection]
+        HTTPS[HTTPS Encryption<br/>Secure Communication]
     end
 
     subgraph "Runtime Security"
-        Sandboxing[WebContainer<br/>Isolated Execution]
-        Permissions[File Permissions]
-        ResourceLimits[Resource Limits]
-        Monitoring[Security Monitoring]
+        Isolation[Process Isolation<br/>Separate Memory Space]
+        FileAccess[Restricted File Access<br/>Virtual File System]
+        NetworkLimit[Network Restrictions<br/>Controlled API Calls]
+        ResourceLimits[Resource Limits<br/>Memory/CPU Constraints]
     end
 
-    WAF --> Auth
-    Auth --> Encryption
-    Encryption --> Sandboxing
+    subgraph "API Security"
+        OpenRouterAuth[OpenRouter API<br/>Secured Key Management]
+        InputValidation[Input Validation<br/>Sanitization]
+        RateLimiting[Rate Limiting<br/>Request Throttling]
+        ErrorHandling[Error Handling<br/>No Information Leakage]
+    end
 
-    style WAF fill:#ffebee
-    style Auth fill:#e8f5e8
-    style Encryption fill:#e3f2fd
-    style Sandboxing fill:#fff3e0
+    subgraph "Data Protection"
+        LocalStorage[Secure LocalStorage<br/>API Key Encryption]
+        StateManagement[State Protection<br/>Sensitive Data Handling]
+        Cleanup[Data Cleanup<br/>Automatic Cleanup]
+    end
+
+    WebContainer --> Isolation
+    CORS --> FileAccess
+    SecurityHeaders --> NetworkLimit
+    HTTPS --> ResourceLimits
+
+    Isolation --> OpenRouterAuth
+    FileAccess --> InputValidation
+    NetworkLimit --> RateLimiting
+    ResourceLimits --> ErrorHandling
+
+    OpenRouterAuth --> LocalStorage
+    InputValidation --> StateManagement
+    RateLimiting --> Cleanup
+
+    style WebContainer fill:#007ACC,color:#fff
+    style CORS fill:#FF6B35,color:#fff
+    style OpenRouterAuth fill:#9C27B0,color:#fff
+    style LocalStorage fill:#4CAF50,color:#fff
 ```
 
-### Authentication & Authorization Flow
+### API Key Management
 
-```mermaid
-sequenceDiagram
-    participant User
-    participant Frontend
-    participant Gateway
-    participant AuthService
-    participant Database
-    participant Redis
+```typescript
+// Actual API key security implementation
+export class OpenRouterService {
+  private static readonly STORAGE_KEY = 'openrouter_api_key';
 
-    User->>Frontend: Login Request
-    Frontend->>Gateway: POST /api/auth/login
-    Gateway->>AuthService: Validate Credentials
-    AuthService->>Database: Check User
-    Database-->>AuthService: User Data
-    AuthService-->>Gateway: JWT Token + User
-    Gateway->>Redis: Store Session
-    Gateway-->>Frontend: Auth Response
-    Frontend-->>User: Store Token
+  static setApiKey(apiKey: string): void {
+    localStorage.setItem(this.STORAGE_KEY, apiKey.trim());
+  }
 
-    Note over User,Redis: Subsequent Requests
-    User->>Frontend: API Request
-    Frontend->>Gateway: Request + JWT Token
-    Gateway->>Redis: Validate Session
-    Redis-->>Gateway: Session Valid
-    Gateway->>AuthService: Verify Token
-    AuthService-->>Gateway: Token Valid
-    Gateway-->>Frontend: Protected Data
+  static getApiKey(): string | null {
+    return localStorage.getItem(this.STORAGE_KEY);
+  }
+
+  static isValidApiKey(apiKey: string): boolean {
+    return apiKey.trim().length > 0 && apiKey.startsWith('sk-');
+  }
+}
 ```
 
 ## Performance Architecture
 
-### Performance Optimization Layers
+### WebContainer Performance Optimization
 
 ```mermaid
 graph TB
     subgraph "Frontend Performance"
+        Vite[Vite Build Tool<br/>Fast Development]
         CodeSplitting[Code Splitting<br/>Lazy Loading]
-        TreeShaking[Tree Shaking<br/>Dead Code Elimination]
-        Caching[Browser Caching<br/>Service Workers]
-        Optimization[Asset Optimization<br/>Compression]
+        TreeShaking[Tree Shaking<br/>Dead Code Removal]
+        HotReload[Hot Module Reload<br/>Instant Updates]
+    end
+
+    subgraph "WebContainer Performance"
+        Singleton[Singleton Pattern<br/>Single Instance]
+        ResourceMgmt[Resource Management<br/>Memory Limits]
+        CacheStrategy[File Caching<br/>Virtual FS Cache]
+        StartupOpt[Startup Optimization<br/>Fast Boot]
+    end
+
+    subgraph "AI Performance"
+        Streaming[Streaming Responses<br/>Real-time Chat]
+        ModelCaching[Model Caching<br/>1 Hour Cache]
+        ContextBuilding[Context Building<br/>Efficient File Reading]
+        RequestBatching[Request Optimization<br/>Batch Operations]
     end
 
     subgraph "Network Performance"
-        CDN[CDN Distribution<br/>Edge Caching]
-        HTTP2[HTTP/2<br/>Multiplexing]
-        Compression[Response Compression<br/>Gzip/Brotli]
-        CachingHeaders[Cache Headers<br/>Browser Caching]
+        SocketIO[Socket.IO<br/>Real-time Communication]
+        Compression[Response Compression<br/>Gzip]
+        CacheHeaders[Cache Headers<br/>Browser Caching]
+        CDN[Static Asset CDN<br/>Global Distribution]
     end
 
-    subgraph "Backend Performance"
-        ConnectionPooling[Connection Pooling<br/>Database Connections]
-        QueryOptimization[Query Optimization<br/>Indexing]
-        Caching[Application Caching<br/>Redis]
-        AsyncProcessing[Async Processing<br/>Background Jobs]
-    end
+    Vite --> CodeSplitting
+    Vite --> TreeShaking
+    Vite --> HotReload
 
-    subgraph "Infrastructure Performance"
-        LoadBalancing[Load Balancing<br/>Horizontal Scaling]
-        AutoScaling[Auto Scaling<br/>Resource Management]
-        Monitoring[Performance Monitoring<br/>Metrics & Alerts]
-        CDN[Global CDN<br/>Edge Distribution]
-    end
+    CodeSplitting --> Singleton
+    TreeShaking --> ResourceMgmt
+    HotReload --> CacheStrategy
 
-    CodeSplitting --> CDN
-    TreeShaking --> HTTP2
-    Caching --> ConnectionPooling
-    Optimization --> QueryOptimization
+    Singleton --> Streaming
+    ResourceMgmt --> ModelCaching
+    CacheStrategy --> ContextBuilding
+    StartupOpt --> RequestBatching
 
-    style CodeSplitting fill:#e1f5fe
-    style CDN fill:#e8f5e8
-    style ConnectionPooling fill:#f3e5f5
-    style LoadBalancing fill:#fff3e0
+    Streaming --> SocketIO
+    ModelCaching --> Compression
+    ContextBuilding --> CacheHeaders
+    RequestBatching --> CDN
+
+    style Vite fill:#646CFF,color:#fff
+    style WebContainer fill:#007ACC,color:#fff
+    style Streaming fill:#FF6B35,color:#fff
+    style SocketIO fill:#010101,color:#fff
 ```
 
-### Monitoring and Observability
+### Memory and Resource Management
 
-```mermaid
-graph LR
-    subgraph "Application Metrics"
-        ErrorRate[Error Rate]
-        ResponseTime[Response Time]
-        Throughput[Throughput]
-        UserActivity[User Activity]
-    end
+```typescript
+// Actual WebContainer singleton resource management
+class WebContainerSingleton {
+  static async getInstance(): Promise<WebContainer> {
+    // Global instance prevents memory leaks
+    if (window.__WEBCONTAINER_INSTANCE__) {
+      return window.__WEBCONTAINER_INSTANCE__;
+    }
 
-    subgraph "Infrastructure Metrics"
-        CPU[CPU Usage]
-        Memory[Memory Usage]
-        DiskIO[Disk I/O]
-        NetworkIO[Network I/O]
-    end
+    // Boot process with resource optimization
+    window.__WEBCONTAINER_BOOT_PROMISE__ = (async () => {
+      const instance = await WebContainer.boot();
+      // Global reference for garbage collection management
+      window.__WEBCONTAINER_INSTANCE__ = instance;
+      return instance;
+    })();
 
-    subgraph "Business Metrics"
-        ActiveUsers[Active Users]
-        FeatureUsage[Feature Usage]
-        ConversionRate[Conversion Rate]
-        Retention[User Retention]
-    end
-
-    subgraph "Monitoring Tools"
-        Prometheus[Prometheus]
-        Grafana[Grafana]
-        APM[APM Tools]
-        Logging[Structured Logging]
-    end
-
-    ErrorRate --> Prometheus
-    ResponseTime --> Prometheus
-    CPU --> Prometheus
-    ActiveUsers --> Prometheus
-
-    Prometheus --> Grafana
-    APM --> Grafana
-    Logging --> Grafana
-
-    style ErrorRate fill:#ffebee
-    style CPU fill:#fff3e0
-    style ActiveUsers fill:#e8f5e8
-    style Prometheus fill:#e3f2fd
+    return window.__WEBCONTAINER_BOOT_PROMISE__;
+  }
+}
 ```
 
-## Scalability Architecture
+## Development and Deployment Architecture
 
-### Horizontal Scaling Strategy
+### Monorepo Development Workflow
 
 ```mermaid
 graph TB
-    subgraph "Load Balancer Layer"
-        LB[Load Balancer<br/>NGINX/HAProxy]
-        SSL[SSL Termination]
+    subgraph "Development Environment"
+        RootPackage[Root package.json<br/>Concurrent Scripts]
+        ClientPackage[client/package.json<br/>React Dependencies]
+        ServerPackage[server/package.json<br/>Express Dependencies]
+        DevServers[Concurrent Dev Servers<br/>npm run dev]
     end
 
-    subgraph "Application Servers"
-        App1[App Server 1<br/>Express + Node.js]
-        App2[App Server 2<br/>Express + Node.js]
-        App3[App Server N<br/>Express + Node.js]
+    subgraph "Build Process"
+        ViteBuild[Vite Build<br/>Frontend Bundling]
+        TypeScript[TypeScript Compilation<br/>Type Checking]
+        ESLint[ESLint Linting<br/>Code Quality]
+        Tailwind[Tailwind CSS<br/>Style Compilation]
     end
 
-    subgraph "Service Mesh"
-        FileService1[File Service 1]
-        FileService2[File Service 2]
-        AIService1[AI Service 1]
-        AIService2[AI Service 2]
+    subgraph "Development Tools"
+        ViteDev[Vite Dev Server<br/>HMR Support]
+        Nodemon[Nodemon<br/>Auto-restart]
+        Swagger[Swagger UI<br/>API Documentation]
+        BrowserDev[Browser DevTools<br/>Debugging]
     end
 
-    subgraph "Data Layer"
-        MasterDB[(Master DB)]
-        ReplicaDB1[(Replica DB 1)]
-        ReplicaDB2[(Replica DB 2)]
-        RedisCluster[(Redis Cluster)]
+    subgraph "Code Quality"
+        Prettier[Prettier<br/>Code Formatting]
+        TypeScript[TypeScript<br/>Type Safety]
+        GitHooks[Git Hooks<br/>Pre-commit Checks]
+        ConventionalCommits[Conventional Commits<br/>Semantic Versioning]
     end
 
-    LB --> App1
-    LB --> App2
-    LB --> App3
+    RootPackage --> DevServers
+    DevServers --> ClientPackage
+    DevServers --> ServerPackage
 
-    App1 --> FileService1
-    App1 --> AIService1
-    App2 --> FileService2
-    App2 --> AIService2
+    ViteBuild --> ViteDev
+    TypeScript --> ESLint
+    ESLint --> Tailwind
 
-    FileService1 --> MasterDB
-    FileService2 --> MasterDB
-    AIService1 --> RedisCluster
-    AIService2 --> RedisCluster
+    ViteDev --> BrowserDev
+    Nodemon --> Swagger
+    Swagger --> BrowserDev
 
-    MasterDB --> ReplicaDB1
-    MasterDB --> ReplicaDB2
+    BrowserDev --> Prettier
+    Prettier --> GitHooks
+    GitHooks --> ConventionalCommits
 
-    style LB fill:#4CAF50,color:#fff
-    style App1 fill:#2196F3,color:#fff
-    style App2 fill:#2196F3,color:#fff
-    style App3 fill:#2196F3,color:#fff
-    style MasterDB fill:#FF9800,color:#fff
-    style RedisCluster fill:#9C27B0,color:#fff
+    style RootPackage fill:#68A063,color:#fff
+    style DevServers fill:#61DAFB,color:#fff
+    style ViteBuild fill:#646CFF,color:#fff
+    style Swagger fill:#4CAF50,color:#fff
 ```
 
-### Auto-scaling Configuration
-
-```mermaid
-graph LR
-    subgraph "Metrics Collection"
-        CPU[CPU Usage > 70%]
-        Memory[Memory Usage > 80%]
-        RequestRate[Request Rate > 1000/s]
-        QueueLength[Queue Length > 100]
-    end
-
-    subgraph "Scaling Triggers"
-        ScaleUp[Scale Up Event]
-        ScaleDown[Scale Down Event]
-    end
-
-    subgraph "Scaling Actions"
-        AddInstance[Add Server Instance]
-        RemoveInstance[Remove Server Instance]
-        UpdateLB[Update Load Balancer]
-        HealthCheck[Health Check]
-    end
-
-    CPU --> ScaleUp
-    Memory --> ScaleUp
-    RequestRate --> ScaleUp
-    QueueLength --> ScaleUp
-
-    ScaleDown --> CPU
-    ScaleDown --> Memory
-    ScaleDown --> RequestRate
-
-    ScaleUp --> AddInstance
-    AddInstance --> UpdateLB
-    UpdateLB --> HealthCheck
-
-    ScaleDown --> RemoveInstance
-    RemoveInstance --> UpdateLB
-
-    style CPU fill:#ffebee
-    style Memory fill:#ffebee
-    style RequestRate fill:#fff3e0
-    style ScaleUp fill:#e8f5e8
-    style ScaleDown fill:#ffebee
-    style AddInstance fill:#e3f2fd
-    style RemoveInstance fill:#e3f2fd
-```
-
-## Disaster Recovery and High Availability
-
-### High Availability Architecture
+### API Documentation Architecture
 
 ```mermaid
 graph TB
-    subgraph "Primary Region"
-        PrimaryLB[Primary Load Balancer]
-        PrimaryApp[Primary App Servers]
-        PrimaryDB[(Primary Database)]
-        PrimaryCache[(Primary Cache)]
+    subgraph "Swagger Documentation"
+        SwaggerSpec[Swagger Spec<br/>API Definition]
+        SwaggerUI[Swagger UI<br/>Interactive Docs]
+        APIDocs[/api-docs<br/>Documentation Page]
+        HealthCheck[/api/health<br/>Service Status]
     end
 
-    subgraph "Secondary Region"
-        SecondaryLB[Secondary Load Balancer]
-        SecondaryApp[Secondary App Servers]
-        SecondaryDB[(Standby Database)]
-        SecondaryCache[(Secondary Cache)]
+    subgraph "API Routes Structure"
+        FilesAPI[/api/files<br/>File Operations]
+        ProjectsAPI[/api/projects<br/>Project Management]
+        TemplatesAPI[/api/templates<br/>Template Access]
+        APIRoot[/api<br/>Root Redirect]
     end
 
-    subgraph "Backup Storage"
-        S3[S3 Backup Storage]
-        Glacier[Glacier Archive]
+    subgraph "Documentation Features"
+        Interactive[Interactive Testing<br/>Try API Endpoints]
+        SchemaDisplay[Schema Display<br/>Request/Response Models]
+        ErrorCodes[Error Documentation<br/>HTTP Status Codes]
+        Examples[Code Examples<br/>Usage Samples]
     end
 
-    subgraph "Monitoring"
-        HealthCheck[Health Monitoring]
-        Failover[Automatic Failover]
-        Alerting[Alert System]
-    end
+    SwaggerSpec --> SwaggerUI
+    SwaggerUI --> APIDocs
+    APIDocs --> HealthCheck
 
-    PrimaryLB --> PrimaryApp
-    PrimaryApp --> PrimaryDB
-    PrimaryApp --> PrimaryCache
+    FilesAPI --> SwaggerSpec
+    ProjectsAPI --> SwaggerSpec
+    TemplatesAPI --> SwaggerSpec
+    APIRoot --> APIDocs
 
-    HealthCheck --> PrimaryLB
-    HealthCheck --> SecondaryLB
-    Failover --> SecondaryLB
+    SwaggerUI --> Interactive
+    Interactive --> SchemaDisplay
+    SchemaDisplay --> ErrorCodes
+    ErrorCodes --> Examples
 
-    PrimaryDB -.->|Replication| SecondaryDB
-    PrimaryCache -.->|Sync| SecondaryCache
-
-    PrimaryDB --> S3
-    S3 --> Glacier
-
-    style PrimaryLB fill:#4CAF50,color:#fff
-    style SecondaryLB fill:#FF9800,color:#fff
-    style PrimaryDB fill:#2196F3,color:#fff
-    style SecondaryDB fill:#9C27B0,color:#fff
-    style HealthCheck fill:#E91E63,color:#fff
-```
-
-### Backup and Recovery Strategy
-
-```mermaid
-graph LR
-    subgraph "Backup Types"
-        FullBackup[Full Backups<br/>Daily]
-        IncrementalBackup[Incremental Backups<br/>Hourly]
-        TransactionLog[Transaction Logs<br/>Real-time]
-    end
-
-    subgraph "Storage Locations"
-        LocalStorage[Local Storage<br/>Fast Recovery]
-        RegionalStorage[Regional Storage<br/>Cost-effective]
-        ColdStorage[Cold Storage<br/>Long-term Archive]
-    end
-
-    subgraph "Recovery Process"
-        RTO[RTO: < 1 hour]
-        RPO[RPO: < 15 minutes]
-        DisasterPlan[Disaster Recovery Plan]
-        Testing[Regular Testing]
-    end
-
-    FullBackup --> LocalStorage
-    FullBackup --> RegionalStorage
-    IncrementalBackup --> RegionalStorage
-    TransactionLog --> ColdStorage
-
-    LocalStorage --> RTO
-    RegionalStorage --> RPO
-    ColdStorage --> DisasterPlan
-    DisasterPlan --> Testing
-
-    style FullBackup fill:#e1f5fe
-    style IncrementalBackup fill:#e8f5e8
-    style TransactionLog fill:#f3e5f5
-    style RTO fill:#fff3e0
-    style RPO fill:#fff3e0
+    style SwaggerSpec fill:#4CAF50,color:#fff
+    style FilesAPI fill:#2196F3,color:#fff
+    style Interactive fill:#FF9800,color:#fff
+    style Examples fill:#9C27B0,color:#fff
 ```
 
 ## Chapter Summary
 
-In this comprehensive chapter, we've explored the intricate architecture of AutoCode:
+In this chapter, we've explored the actual architecture of AutoCode based on the real implementation:
 
-- ✅ **High-level system architecture** with clear separation of concerns
-- ✅ **Frontend architecture** using React, Zustand, and modern patterns
-- ✅ **Backend microservices architecture** with scalable design
-- ✅ **Data architecture** with optimized database and caching strategies
-- ✅ **Security architecture** with multiple layers of protection
-- ✅ **Performance optimization** across all system layers
-- ✅ **Scalability architecture** supporting horizontal scaling
-- ✅ **Disaster recovery** ensuring high availability
+- ✅ **React 18 + TypeScript Frontend** with Vite build system and hot reloading
+- ✅ **Express.js Backend** with Socket.IO for real-time collaboration
+- ✅ **Zustand State Management** with four specialized stores
+- ✅ **WebContainer Singleton Pattern** for secure browser-based code execution
+- ✅ **OpenRouter AI Integration** with streaming responses and multiple model support
+- ✅ **Browser-Based Storage** using localStorage and server-side file system
+- ✅ **Real-Time Collaboration** via Socket.IO with workspace management
+- ✅ **Comprehensive API Documentation** with Swagger interactive interface
 
 ### Key Architectural Decisions
 
-1. **Microservices Pattern**: Enables independent scaling and development
-2. **Event-Driven Architecture**: Supports real-time collaboration
-3. **WebContainer Integration**: Provides secure code execution
-4. **AI-First Design**: Integrates AI throughout the application
-5. **Progressive Enhancement**: Graceful degradation for compatibility
+1. **Monorepo Structure**: Unified codebase with concurrent development servers
+2. **WebContainer Integration**: Secure, sandboxed code execution in the browser
+3. **Singleton Pattern**: Ensures exactly one WebContainer instance per browser tab
+4. **State Management**: Zustand stores with clear separation of concerns
+5. **Real-Time Features**: Socket.IO enables live collaboration and file synchronization
+6. **API-First Design**: Comprehensive REST API with interactive documentation
 
-### Design Benefits
+### Technical Benefits
 
-- **🚀 Performance**: Optimized for real-time collaboration and AI interactions
-- **🔒 Security**: Multi-layered security with sandboxed execution
-- **📈 Scalability**: Horizontal scaling support for growing user base
-- **🛡️ Reliability**: High availability with disaster recovery
-- **🔧 Maintainability**: Clean architecture with comprehensive testing
+- **🚀 Performance**: Vite's fast build system and WebContainer optimization
+- **🔒 Security**: Sandboxed execution environment and secure API key management
+- **⚡ Real-Time**: Socket.IO enables instant collaboration features
+- **🧠 AI-Powered**: Context-aware AI assistance with streaming responses
+- **📚 Self-Documented**: Interactive API documentation with Swagger
+- **🔧 Developer Experience**: Hot reloading, TypeScript, and modern tooling
 
-> **🔑 Key Takeaway:** AutoCode's architecture is designed to handle the complex requirements of an AI-powered code editor while maintaining performance, security, and scalability at every layer.
+> **🔑 Key Takeaway:** AutoCode's architecture successfully combines modern web technologies with AI capabilities, creating a powerful development environment that runs entirely in the browser while maintaining security, performance, and real-time collaboration features.
 
 ---
 

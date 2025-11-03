@@ -2,228 +2,291 @@
 
 ## Overview
 
-AutoCode's AI integration transforms it from a simple code editor into an intelligent development assistant. This chapter explores the comprehensive AI architecture, OpenRouter API integration, and the various AI-powered features that enhance the coding experience.
+AutoCode's AI integration transforms it from a simple code editor into an intelligent development assistant. This chapter explores the actual AI architecture, OpenRouter API integration, and the various AI-powered features based on the real implementation in the AutoCode codebase.
 
-## AI Architecture Overview
+## Actual AI Architecture
 
 ```mermaid
 graph TB
-    subgraph "Frontend AI Components"
-        ChatBot[ChatBot Interface]
-        CodeAssistant[Code Assistant]
-        ErrorHelper[Error Helper]
-        RefactoringTool[Refactoring Tool]
+    subgraph "Frontend AI Components (client/src/)"
+        EnhancedChatBot[Enhanced ChatBot<br/>Main AI Interface]
+        ChatStore[enhancedChatStore<br/>State Management]
+        ModelSelector[Model Selector<br/>AI Model Selection]
+        SettingsModal[Settings Modal<br/>AI Configuration]
     end
 
-    subgraph "AI Service Layer"
-        ContextManager[Context Manager]
-        PromptBuilder[Prompt Builder]
-        ResponseParser[Response Parser]
-        CacheManager[Cache Manager]
+    subgraph "AI Services (client/src/services/)"
+        OpenRouterService[OpenRouter Service<br/>API Integration]
+        EnhancedAIService[Enhanced AI Service<br/>Context Building]
+        AIFileOperations[AI File Operations<br/>Create/Modify/Delete]
+        StreamingHandler[Streaming Response Handler]
     end
 
-    subgraph "AI API Integration"
-        OpenRouter[OpenRouter API]
-        ModelRouter[Model Router]
-        StreamingHandler[Streaming Handler]
-        ErrorHandler[Error Handler]
+    subgraph "WebContainer AI Integration"
+        WebContainerAPI[WebContainer API<br/>Secure Code Execution]
+        AIFileSystem[AI File System Access<br/>Virtual FS Operations]
+        ContextAwareness[Context Awareness<br/>Project Understanding]
     end
 
-    subgraph "AI Models"
-        Claude[Claude 3.5 Sonnet]
-        GPT4[GPT-4]
-        Llama[Llama 3.1]
-        Gemini[Gemini Pro]
+    subgraph "OpenRouter Models"
+        FreeModels[Free Models<br/>Auto/Claude/Mistral]
+        PremiumModels[Premium Models<br/>GPT-4/Claude-3.5]
+        CachedModels[Model Cache<br/>1 Hour Cache]
     end
 
-    ChatBot --> ContextManager
-    CodeAssistant --> PromptBuilder
-    ErrorHelper --> ResponseParser
-    RefactoringTool --> CacheManager
+    EnhancedChatBot --> ChatStore
+    ChatStore --> OpenRouterService
+    ChatStore --> EnhancedAIService
+    EnhancedAIService --> AIFileOperations
 
-    ContextManager --> OpenRouter
-    PromptBuilder --> OpenRouter
-    ResponseParser --> ModelRouter
-    CacheManager --> StreamingHandler
+    OpenRouterService --> StreamingHandler
+    StreamingHandler --> FreeModels
+    FreeModels --> PremiumModels
 
-    OpenRouter --> ModelRouter
-    ModelRouter --> Claude
-    ModelRouter --> GPT4
-    ModelRouter --> Llama
-    ModelRouter --> Gemini
+    AIFileOperations --> WebContainerAPI
+    WebContainerAPI --> AIFileSystem
+    AIFileSystem --> ContextAwareness
 
-    style ChatBot fill:#e1f5fe
-    style ContextManager fill:#e8f5e8
-    style OpenRouter fill:#f3e5f5
-    style Claude fill:#fff3e0
+    style EnhancedChatBot fill:#FF6B35,color:#fff
+    style ChatStore fill:#9C27B0,color:#fff
+    style OpenRouterService fill:#4CAF50,color:#fff
+    style WebContainerAPI fill:#007ACC,color:#fff
+    style FreeModels fill:#2196F3,color:#fff
 ```
 
 ## OpenRouter API Integration
 
-### Service Architecture
+### Actual OpenRouter Service Implementation
+
+The real OpenRouter service provides comprehensive API integration with caching, streaming support, and model management:
 
 ```typescript
-// services/OpenRouterService.ts
-export interface OpenRouterConfig {
-  apiKey: string;
-  baseUrl: string;
-  defaultModel: string;
-  timeout: number;
-  maxRetries: number;
-}
-
-export interface ChatMessage {
-  role: 'system' | 'user' | 'assistant';
-  content: string;
-  timestamp?: Date;
-}
-
-export interface AIResponse {
-  content: string;
-  model: string;
-  usage: {
-    prompt_tokens: number;
-    completion_tokens: number;
-    total_tokens: number;
+// client/src/services/openRouter.ts - Actual Implementation
+export interface OpenRouterModel {
+  id: string;
+  name: string;
+  created: number;
+  description: string;
+  architecture: {
+    input_modalities: string[];
+    output_modalities: string[];
+    tokenizer: string;
+    instruct_type: string;
   };
-  finish_reason: string;
+  top_provider: {
+    is_moderated: boolean;
+    context_length: number;
+    max_completion_tokens: number;
+  };
+  pricing: {
+    prompt: string;
+    completion: string;
+    image: string;
+    request: string;
+    web_search: string;
+    internal_reasoning: string;
+    input_cache_read: string;
+    input_cache_write: string;
+  };
+  canonical_slug: string;
+  context_length: number;
+  hugging_face_id: string;
+  per_request_limits: Record<string, unknown>;
+  supported_parameters: string[];
 }
 
 export class OpenRouterService {
-  private config: OpenRouterConfig;
-  private contextCache = new Map<string, any>();
+  private static readonly BASE_URL = 'https://openrouter.ai/api/v1';
+  private static readonly STORAGE_KEY = 'openrouter_api_key';
+  private static readonly MODELS_CACHE_KEY = 'openrouter_models_cache';
+  private static readonly CACHE_DURATION = 1000 * 60 * 60; // 1 hour
 
-  constructor(config: OpenRouterConfig) {
-    this.config = config;
+  static getApiKey(): string | null {
+    return localStorage.getItem(this.STORAGE_KEY);
   }
 
-  async sendMessage(
-    messages: ChatMessage[],
-    options: {
-      model?: string;
-      temperature?: number;
-      maxTokens?: number;
-      stream?: boolean;
-    } = {}
-  ): Promise<AIResponse> {
-    const {
-      model = this.config.defaultModel,
-      temperature = 0.7,
-      maxTokens = 4000,
-      stream = false
-    } = options;
+  static setApiKey(apiKey: string): void {
+    localStorage.setItem(this.STORAGE_KEY, apiKey.trim());
+  }
+
+  static clearApiKey(): void {
+    localStorage.removeItem(this.STORAGE_KEY);
+  }
+
+  static isValidApiKey(apiKey: string): boolean {
+    return apiKey.trim().length > 0 && apiKey.startsWith('sk-');
+  }
+
+  static async getModels(): Promise<OpenRouterModel[]> {
+    // Check cache first
+    const cached = this.getCachedModels();
+    if (cached) {
+      return cached;
+    }
 
     try {
-      const response = await fetch(`${this.config.baseUrl}/chat/completions`, {
-        method: 'POST',
+      const response = await fetch(`${this.BASE_URL}/models`, {
+        method: 'GET',
         headers: {
-          'Authorization': `Bearer ${this.config.apiKey}`,
           'Content-Type': 'application/json',
-          'HTTP-Referer': window.location.origin,
-          'X-Title': 'AutoCode AI Assistant'
         },
-        body: JSON.stringify({
-          model,
-          messages,
-          temperature,
-          max_tokens: maxTokens,
-          stream
-        })
       });
 
       if (!response.ok) {
-        throw new Error(`OpenRouter API error: ${response.statusText}`);
+        throw new Error(`Failed to fetch models: ${response.statusText}`);
       }
 
-      const data = await response.json();
-      return this.parseResponse(data);
+      const data: OpenRouterModelsResponse = await response.json();
+
+      // Cache the models
+      this.cacheModels(data.data);
+
+      return data.data;
     } catch (error) {
-      console.error('OpenRouter API error:', error);
+      console.error('Error fetching models:', error);
       throw error;
     }
   }
 
-  async sendMessageStream(
+  static getFreeModels(models: OpenRouterModel[]): OpenRouterModel[] {
+    // First try to find models with actual free pricing
+    const trulyFreeModels = models.filter(model => {
+      const pricing = model.pricing;
+      return pricing && (
+        pricing.prompt === '0' &&
+        pricing.completion === '0' &&
+        (pricing.request === '0' || pricing.request === null)
+      );
+    });
+
+    if (trulyFreeModels.length > 0) {
+      return trulyFreeModels.slice(0, 10);
+    }
+
+    // Fallback to commonly known free models
+    const commonFreeModels = [
+      'openrouter/auto',
+      'mistralai/mistral-7b-instruct',
+      'huggingfaceh4/zephyr-7b-beta',
+      'openchat/openchat-7b',
+      'gryphe/mythomist-7b',
+      'undi95/toppy-m-7b'
+    ];
+
+    const fallbackModels = models.filter(model =>
+      commonFreeModels.some(freeId => model.id.toLowerCase().includes(freeId.toLowerCase()))
+    );
+
+    // If still no models found, return first few models (user might have credits)
+    if (fallbackModels.length === 0) {
+      return models.slice(0, 5);
+    }
+
+    return fallbackModels.slice(0, 10);
+  }
+
+  static async sendMessage(
+    model: string,
     messages: ChatMessage[],
     options: {
-      model?: string;
-      temperature?: number;
       maxTokens?: number;
+      temperature?: number;
+      stream?: boolean;
       onChunk?: (chunk: string) => void;
     } = {}
-  ): Promise<AIResponse> {
-    const { onChunk, ...restOptions } = options;
+  ): Promise<string> {
+    const apiKey = this.getApiKey();
+    if (!apiKey) {
+      throw new Error('API key not found. Please configure your OpenRouter API key.');
+    }
+
+    const requestBody: ChatCompletionRequest = {
+      model,
+      messages: messages.map(msg => ({
+        role: msg.role,
+        content: msg.content,
+      })),
+      max_tokens: options.maxTokens || 1000,
+      temperature: options.temperature || 0.7,
+      stream: options.stream || false,
+    };
 
     try {
-      const response = await fetch(`${this.config.baseUrl}/chat/completions`, {
+      const response = await fetch(`${this.BASE_URL}/chat/completions`, {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${this.config.apiKey}`,
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${apiKey}`,
           'HTTP-Referer': window.location.origin,
-          'X-Title': 'AutoCode AI Assistant'
+          'X-Title': 'AutoCode - Online Code Editor',
         },
-        body: JSON.stringify({
-          model: restOptions.model || this.config.defaultModel,
-          messages,
-          temperature: restOptions.temperature || 0.7,
-          max_tokens: restOptions.maxTokens || 4000,
-          stream: true
-        })
+        body: JSON.stringify(requestBody),
       });
 
       if (!response.ok) {
-        throw new Error(`OpenRouter API error: ${response.statusText}`);
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(
+          errorData.error?.message ||
+          `API request failed: ${response.status} ${response.statusText}`
+        );
       }
 
-      return await this.handleStreamResponse(response, onChunk);
+      // Handle streaming response
+      if (options.stream && response.body) {
+        return this.handleStreamingResponse(response, options.onChunk);
+      }
+
+      // Handle regular response
+      const data = await response.json();
+
+      if (!data.choices || !data.choices[0] || !data.choices[0].message) {
+        throw new Error('Invalid response format from API');
+      }
+
+      return data.choices[0].message.content;
     } catch (error) {
-      console.error('OpenRouter streaming error:', error);
+      console.error('Error sending message:', error);
       throw error;
     }
   }
 
-  private async handleStreamResponse(
+  private static async handleStreamingResponse(
     response: Response,
     onChunk?: (chunk: string) => void
-  ): Promise<AIResponse> {
+  ): Promise<string> {
     const reader = response.body!.getReader();
     const decoder = new TextDecoder();
     let fullContent = '';
-    let usage: any = {};
-    let model = '';
 
     try {
+      // eslint-disable-next-line no-constant-condition
       while (true) {
         const { done, value } = await reader.read();
+
         if (done) break;
 
         const chunk = decoder.decode(value);
-        const lines = chunk.split('\n').filter(line => line.trim());
+        const lines = chunk.split('\n');
 
         for (const line of lines) {
           if (line.startsWith('data: ')) {
             const data = line.slice(6);
-            if (data === '[DONE]') continue;
+
+            if (data === '[DONE]') {
+              return fullContent;
+            }
 
             try {
               const parsed = JSON.parse(data);
-              const delta = parsed.choices[0]?.delta;
+              const content = parsed.choices?.[0]?.delta?.content;
 
-              if (delta?.content) {
-                fullContent += delta.content;
-                onChunk?.(delta.content);
-              }
-
-              if (parsed.usage) {
-                usage = parsed.usage;
-              }
-
-              if (parsed.model) {
-                model = parsed.model;
+              if (content) {
+                fullContent += content;
+                onChunk?.(content);
               }
             } catch (e) {
-              // Ignore JSON parsing errors for streaming chunks
+              // Skip invalid JSON lines
+              continue;
             }
           }
         }
@@ -232,753 +295,685 @@ export class OpenRouterService {
       reader.releaseLock();
     }
 
-    return {
-      content: fullContent,
-      model,
-      usage: usage || {
-        prompt_tokens: 0,
-        completion_tokens: 0,
-        total_tokens: 0
-      },
-      finish_reason: 'stop'
-    };
+    return fullContent;
   }
 
-  private parseResponse(data: any): AIResponse {
-    const choice = data.choices[0];
-    return {
-      content: choice.message.content,
-      model: data.model,
-      usage: data.usage,
-      finish_reason: choice.finish_reason
-    };
-  }
-}
-```
-
-### Context Management
-
-```typescript
-// services/AIContextManager.ts
-export interface AIContext {
-  workspaceId: string;
-  activeFile?: {
-    path: string;
-    content: string;
-    language: string;
-    cursorPosition?: number;
-    selection?: string;
-  };
-  projectStructure: {
-    files: Array<{
-      path: string;
-      type: 'file' | 'directory';
-      size?: number;
-      language?: string;
-    }>;
-    dependencies: Record<string, string>;
-  };
-  recentActivity: Array<{
-    type: 'edit' | 'create' | 'delete';
-    file: string;
-    timestamp: Date;
-  }>;
-  userPreferences: {
-    preferredLanguage: string;
-    codeStyle: string;
-    aiModel: string;
-  };
-}
-
-export class AIContextManager {
-  private contextCache = new Map<string, AIContext>();
-  private contextTimeout = 5 * 60 * 1000; // 5 minutes
-
-  async buildContext(
-    workspaceId: string,
-    activeFile?: string,
-    selectedCode?: string
-  ): Promise<AIContext> {
-    const cacheKey = `${workspaceId}-${activeFile || ''}`;
-    const cached = this.contextCache.get(cacheKey);
-
-    if (cached && Date.now() - this.getContextTimestamp(cacheKey) < this.contextTimeout) {
-      return cached;
-    }
-
-    const context: AIContext = {
-      workspaceId,
-      projectStructure: await this.getProjectStructure(workspaceId),
-      recentActivity: await this.getRecentActivity(workspaceId),
-      userPreferences: await this.getUserPreferences(workspaceId)
-    };
-
-    if (activeFile) {
-      context.activeFile = await this.getActiveFileContext(activeFile, selectedCode);
-    }
-
-    this.contextCache.set(cacheKey, context);
-    this.setContextTimestamp(cacheKey);
-
-    return context;
-  }
-
-  private async getProjectStructure(workspaceId: string): Promise<AIContext['projectStructure']> {
-    // Implementation would fetch from file system service
-    return {
-      files: [],
-      dependencies: {}
-    };
-  }
-
-  private async getActiveFileContext(
-    filePath: string,
-    selectedCode?: string
-  ): Promise<AIContext['activeFile']> {
-    // Implementation would fetch from file system service
-    return {
-      path: filePath,
-      content: '',
-      language: this.getLanguageFromPath(filePath),
-      selection: selectedCode
-    };
-  }
-
-  private getLanguageFromPath(filePath: string): string {
-    const extension = filePath.split('.').pop()?.toLowerCase();
-    const languageMap: Record<string, string> = {
-      'js': 'javascript',
-      'ts': 'typescript',
-      'jsx': 'react',
-      'tsx': 'react',
-      'py': 'python',
-      'java': 'java',
-      'cpp': 'cpp',
-      'c': 'c',
-      'cs': 'csharp',
-      'php': 'php',
-      'rb': 'ruby',
-      'go': 'go',
-      'rs': 'rust',
-      'sql': 'sql',
-      'html': 'html',
-      'css': 'css',
-      'scss': 'scss',
-      'json': 'json',
-      'xml': 'xml',
-      'yaml': 'yaml',
-      'md': 'markdown'
-    };
-
-    return languageMap[extension || ''] || 'text';
-  }
-
-  private async getRecentActivity(workspaceId: string): Promise<AIContext['recentActivity']> {
-    // Implementation would fetch from activity tracking service
-    return [];
-  }
-
-  private async getUserPreferences(workspaceId: string): Promise<AIContext['userPreferences']> {
-    // Implementation would fetch from user settings service
-    return {
-      preferredLanguage: 'typescript',
-      codeStyle: 'prettier',
-      aiModel: 'anthropic/claude-3.5-sonnet'
-    };
-  }
-
-  private getContextTimestamp(key: string): number {
-    return this.contextCache.get(key + '_timestamp') as any || 0;
-  }
-
-  private setContextTimestamp(key: string): void {
-    this.contextCache.set(key + '_timestamp', Date.now() as any);
-  }
-}
-```
-
-## AI-Powered Features
-
-### Code Generation
-
-```typescript
-// services/AICodeGenerationService.ts
-export interface CodeGenerationRequest {
-  description: string;
-  context: AIContext;
-  language: string;
-  framework?: string;
-  style?: string;
-}
-
-export interface GeneratedCode {
-  code: string;
-  explanation: string;
-  imports: string[];
-  exports: string[];
-  dependencies: string[];
-  suggestions: string[];
-}
-
-export class AICodeGenerationService {
-  constructor(
-    private openRouter: OpenRouterService,
-    private contextManager: AIContextManager
-  ) {}
-
-  async generateCode(request: CodeGenerationRequest): Promise<GeneratedCode> {
-    const prompt = this.buildCodeGenerationPrompt(request);
-
+  private static getCachedModels(): OpenRouterModel[] | null {
     try {
-      const response = await this.openRouter.sendMessage([
-        {
-          role: 'system',
-          content: this.getSystemPrompt('code_generation')
-        },
-        {
-          role: 'user',
-          content: prompt
-        }
-      ], {
-        model: request.context.userPreferences.aiModel,
-        temperature: 0.3,
-        maxTokens: 4000
-      });
+      const cached = localStorage.getItem(this.MODELS_CACHE_KEY);
+      if (!cached) return null;
 
-      return this.parseGeneratedCode(response.content, request.language);
+      const { data, timestamp } = JSON.parse(cached);
+      const now = Date.now();
+
+      if (now - timestamp > this.CACHE_DURATION) {
+        localStorage.removeItem(this.MODELS_CACHE_KEY);
+        return null;
+      }
+
+      return data;
     } catch (error) {
-      console.error('Code generation failed:', error);
-      throw error;
+      console.error('Error reading cached models:', error);
+      localStorage.removeItem(this.MODELS_CACHE_KEY);
+      return null;
     }
   }
 
-  private buildCodeGenerationPrompt(request: CodeGenerationRequest): string {
-    const { description, context, language, framework, style } = request;
-
-    let prompt = `Generate ${language} code for the following description:\n\n${description}\n\n`;
-
-    // Add context
-    if (context.activeFile) {
-      prompt += `Current file: ${context.activeFile.path}\n`;
-      prompt += `Current content:\n\`\`\`${language}\n${context.activeFile.content}\n\`\`\`\n\n`;
+  private static cacheModels(models: OpenRouterModel[]): void {
+    try {
+      const cacheData = {
+        data: models,
+        timestamp: Date.now(),
+      };
+      localStorage.setItem(this.MODELS_CACHE_KEY, JSON.stringify(cacheData));
+    } catch (error) {
+      console.error('Error caching models:', error);
     }
-
-    // Add project structure
-    if (context.projectStructure.files.length > 0) {
-      prompt += `Project structure:\n`;
-      context.projectStructure.files.slice(0, 20).forEach(file => {
-        prompt += `${file.type === 'directory' ? '📁' : '📄'} ${file.path}\n`;
-      });
-      prompt += '\n';
-    }
-
-    // Add dependencies
-    if (Object.keys(context.projectStructure.dependencies).length > 0) {
-      prompt += `Current dependencies:\n`;
-      Object.entries(context.projectStructure.dependencies).forEach(([name, version]) => {
-        prompt += `- ${name}: ${version}\n`;
-      });
-      prompt += '\n';
-    }
-
-    // Add framework information
-    if (framework) {
-      prompt += `Framework: ${framework}\n`;
-    }
-
-    // Add style preferences
-    if (style) {
-      prompt += `Code style: ${style}\n`;
-    }
-
-    prompt += `Please provide:\n`;
-    prompt += `1. The complete, working code\n`;
-    prompt += `2. Clear explanation of what the code does\n`;
-    prompt += `3. Required imports\n`;
-    prompt += `4. Any additional dependencies needed\n`;
-    prompt += `5. Usage examples or suggestions\n`;
-
-    return prompt;
-  }
-
-  private getSystemPrompt(type: string): string {
-    const prompts: Record<string, string> = {
-      code_generation: `You are an expert software development assistant integrated into AutoCode, an online code editor.
-You have access to the current project context including file structure, dependencies, and code.
-
-Guidelines:
-1. Generate clean, modern, and well-documented code
-2. Follow the project's existing code style and patterns
-3. Use appropriate imports and dependencies
-4. Provide clear explanations and usage examples
-5. Consider security best practices
-6. Ensure code is production-ready
-7. Include error handling where appropriate
-
-Always respond with well-formatted code blocks and detailed explanations.`,
-
-      code_refactoring: `You are an expert code refactoring assistant integrated into AutoCode.
-Your goal is to improve code quality, readability, and maintainability.
-
-Guidelines:
-1. Preserve the original functionality
-2. Improve readability and maintainability
-3. Optimize performance where possible
-4. Follow SOLID principles and design patterns
-5. Ensure backward compatibility
-6. Add appropriate comments and documentation
-
-Suggest specific refactoring steps with code examples.`,
-
-      error_analysis: `You are an expert debugging assistant integrated into AutoCode.
-Your goal is to analyze errors and provide solutions.
-
-Guidelines:
-1. Identify the root cause of the error
-2. Provide clear, actionable solutions
-3. Include code fixes when appropriate
-4. Suggest prevention strategies
-5. Consider edge cases and potential issues
-6. Provide confidence levels for suggestions`
-    };
-
-    return prompts[type] || prompts.code_generation;
-  }
-
-  private parseGeneratedCode(content: string, language: string): GeneratedCode {
-    // Parse the AI response to extract structured information
-    const codeBlock = this.extractCodeBlock(content, language);
-    const explanation = this.extractExplanation(content);
-    const imports = this.extractImports(codeBlock, language);
-    const exports = this.extractExports(codeBlock, language);
-    const dependencies = this.extractDependencies(content);
-    const suggestions = this.extractSuggestions(content);
-
-    return {
-      code: codeBlock,
-      explanation,
-      imports,
-      exports,
-      dependencies,
-      suggestions
-    };
-  }
-
-  private extractCodeBlock(content: string, language: string): string {
-    const regex = new RegExp(`\`\`\`${language}([\\s\\S]*?)\`\`\``, 'i');
-    const match = content.match(regex);
-    return match ? match[1].trim() : '';
-  }
-
-  private extractExplanation(content: string): string {
-    // Extract explanation from the AI response
-    const lines = content.split('\n');
-    const explanationLines: string[] = [];
-    let inExplanation = false;
-
-    for (const line of lines) {
-      if (line.toLowerCase().includes('explanation') || line.toLowerCase().includes('what this does')) {
-        inExplanation = true;
-        continue;
-      }
-
-      if (inExplanation && !line.startsWith('```') && !line.startsWith('#')) {
-        explanationLines.push(line);
-      }
-
-      if (line.startsWith('```') && inExplanation) {
-        break;
-      }
-    }
-
-    return explanationLines.join('\n').trim();
-  }
-
-  private extractImports(code: string, language: string): string[] {
-    const imports: string[] = [];
-
-    if (['javascript', 'typescript', 'react'].includes(language)) {
-      const importRegex = /import\s+.*?\s+from\s+['"]([^'"]+)['"]/g;
-      let match;
-      while ((match = importRegex.exec(code)) !== null) {
-        imports.push(match[1]);
-      }
-    } else if (language === 'python') {
-      const importRegex = /(?:import|from)\s+([^\s]+)/g;
-      let match;
-      while ((match = importRegex.exec(code)) !== null) {
-        imports.push(match[1].replace(/[,\s].*$/, ''));
-      }
-    }
-
-    return [...new Set(imports)];
-  }
-
-  private extractExports(code: string, language: string): string[] {
-    const exports: string[] = [];
-
-    if (['javascript', 'typescript'].includes(language)) {
-      const exportRegex = /export\s+(?:default\s+)?(?:class|function|const|let|var)\s+(\w+)/g;
-      let match;
-      while ((match = exportRegex.exec(code)) !== null) {
-        exports.push(match[1]);
-      }
-    }
-
-    return [...new Set(exports)];
-  }
-
-  private extractDependencies(content: string): string[] {
-    const deps: string[] = [];
-    const depRegex = /npm\s+install\s+(.+)/gi;
-    let match;
-    while ((match = depRegex.exec(content)) !== null) {
-      deps.push(...match[1].split(/\s+/).filter(Boolean));
-    }
-    return [...new Set(deps)];
-  }
-
-  private extractSuggestions(content: string): string[] {
-    const suggestions: string[] = [];
-    const lines = content.split('\n');
-
-    for (const line of lines) {
-      if (line.match(/^\d+\.\s+/) || line.match(/^-\s+/)) {
-        suggestions.push(line.replace(/^[\d\-\s.]+/, '').trim());
-      }
-    }
-
-    return suggestions.filter(Boolean);
   }
 }
 ```
 
-### ChatBot Component
+### Enhanced Chat Store Implementation
+
+The actual chat store manages AI state, streaming responses, and file operations:
 
 ```typescript
-// components/ChatBot.tsx
-interface ChatMessage {
-  id: string;
-  role: 'user' | 'assistant';
-  content: string;
-  timestamp: Date;
-  isStreaming?: boolean;
-}
+// client/src/store/enhancedChatStore.ts - Actual Implementation
+interface ChatState {
+  // Chat State
+  messages: ChatMessage[];
+  isLoading: boolean;
+  model: string;
+  apiKey: string | null;
+  availableModels: OpenRouterModel[];
 
-export const ChatBot: React.FC = () => {
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
-  const [input, setInput] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
-  const { openRouter, contextManager } = useAI();
+  // File Operations
+  webContainerInstance: WebContainer | null;
+  aiFileOperations: AIFileOperations | null;
 
-  const messagesEndRef = useRef<HTMLDivElement>(null);
-
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  // Settings
+  settings: {
+    apiKey: string;
+    model: string;
+    temperature: number;
+    maxTokens: number;
+    streaming: boolean;
   };
 
-  useEffect(() => {
-    scrollToBottom();
-  }, [messages]);
+  // Actions
+  sendMessage: (content: string) => Promise<void>;
+  setModel: (model: string) => void;
+  setApiKey: (apiKey: string) => void;
+  clearMessages: () => void;
+  loadModels: () => Promise<void>;
+  initializeWebContainer: () => Promise<void>;
+  executeAIFileOperation: (operation: FileOperation) => Promise<void>;
+  updateSettings: (settings: Partial<ChatState['settings']>) => void;
+}
 
-  const sendMessage = async () => {
-    if (!input.trim() || isLoading) return;
+export const useChatStore = create<ChatState>((set, get) => ({
+  // Initial State
+  messages: [],
+  isLoading: false,
+  model: 'openrouter/auto',
+  apiKey: OpenRouterService.getApiKey(),
+  availableModels: [],
 
+  webContainerInstance: null,
+  aiFileOperations: null,
+
+  settings: {
+    apiKey: OpenRouterService.getApiKey() || '',
+    model: 'openrouter/auto',
+    temperature: 0.7,
+    maxTokens: 1000,
+    streaming: true,
+  },
+
+  // Load Available Models
+  loadModels: async () => {
+    try {
+      const models = await OpenRouterService.getModels();
+      const freeModels = OpenRouterService.getFreeModels(models);
+      set({ availableModels: freeModels });
+    } catch (error) {
+      console.error('Failed to load models:', error);
+    }
+  },
+
+  // Send Message with Streaming Support
+  sendMessage: async (content: string) => {
+    const { apiKey, model, settings } = get();
+    if (!apiKey) {
+      throw new Error('Please configure your OpenRouter API key first.');
+    }
+
+    set({ isLoading: true });
+
+    // Add user message
     const userMessage: ChatMessage = {
       id: Date.now().toString(),
       role: 'user',
-      content: input,
-      timestamp: new Date()
+      content,
+      timestamp: new Date(),
     };
 
-    setMessages(prev => [...prev, userMessage]);
-    setInput('');
-    setIsLoading(true);
+    set(state => ({
+      messages: [...state.messages, userMessage]
+    }));
 
     try {
-      // Build AI context
-      const context = await contextManager.buildContext('current-workspace');
-
       // Create assistant message placeholder for streaming
       const assistantMessage: ChatMessage = {
         id: (Date.now() + 1).toString(),
         role: 'assistant',
         content: '',
         timestamp: new Date(),
-        isStreaming: true
       };
 
-      setMessages(prev => [...prev, assistantMessage]);
+      set(state => ({
+        messages: [...state.messages, assistantMessage]
+      }));
 
-      // Send streaming request
-      const response = await openRouter.sendMessageStream([
+      // Build message history
+      const messageHistory = [
+        ...get().messages.slice(-10), // Keep last 10 messages for context
         {
           role: 'system',
-          content: `You are AutoCode AI assistant. You have access to the current project context:
-          - Active file: ${context.activeFile?.path || 'None'}
-          - Project files: ${context.projectStructure.files.length} files
-          - Dependencies: ${Object.keys(context.projectStructure.dependencies).join(', ')}
+          content: `You are AutoCode AI assistant, integrated into a browser-based code editor.
+You have access to WebContainer for secure code execution and can help with:
+- Code generation and explanation
+- File operations (create, modify, delete)
+- Debugging and error resolution
+- Project structure understanding
+- Real-time coding assistance
 
-          Provide helpful coding assistance, code suggestions, and explanations.`
-        },
-        ...messages.map(msg => ({
-          role: msg.role as 'user' | 'assistant',
-          content: msg.content
-        })),
-        {
-          role: 'user',
-          content: input
+Be helpful, accurate, and provide code examples when appropriate.`,
         }
-      ], {
-        onChunk: (chunk) => {
-          setMessages(prev => prev.map(msg =>
-            msg.id === assistantMessage.id
-              ? { ...msg, content: msg.content + chunk }
-              : msg
-          ));
+      ];
+
+      // Send streaming request
+      const response = await OpenRouterService.sendMessage(model, messageHistory, {
+        maxTokens: settings.maxTokens,
+        temperature: settings.temperature,
+        stream: settings.streaming,
+        onChunk: (chunk: string) => {
+          set(state => ({
+            messages: state.messages.map(msg =>
+              msg.id === assistantMessage.id
+                ? { ...msg, content: msg.content + chunk }
+                : msg
+            )
+          }));
         }
       });
 
       // Update final message
-      setMessages(prev => prev.map(msg =>
-        msg.id === assistantMessage.id
-          ? { ...msg, content: response.content, isStreaming: false }
-          : msg
-      ));
+      set(state => ({
+        messages: state.messages.map(msg =>
+          msg.id === assistantMessage.id
+            ? { ...msg, content: response }
+            : msg
+        )
+      }));
 
     } catch (error) {
-      console.error('Chat error:', error);
-      setMessages(prev => [...prev.slice(0, -1), {
-        id: (Date.now() + 2).toString(),
-        role: 'assistant',
-        content: 'Sorry, I encountered an error. Please try again.',
-        timestamp: new Date()
-      }]);
+      console.error('Error sending message:', error);
+
+      // Remove the placeholder message and add error message
+      set(state => ({
+        messages: state.messages.slice(0, -1).concat({
+          id: Date.now().toString(),
+          role: 'assistant',
+          content: `Error: ${error.message}`,
+          timestamp: new Date(),
+        })
+      }));
     } finally {
-      setIsLoading(false);
+      set({ isLoading: false });
+    }
+  },
+
+  // Model Management
+  setModel: (model: string) => {
+    set({ model });
+    localStorage.setItem('autocode_ai_model', model);
+  },
+
+  setApiKey: (apiKey: string) => {
+    if (OpenRouterService.isValidApiKey(apiKey)) {
+      OpenRouterService.setApiKey(apiKey);
+      set({ apiKey });
+      get().updateSettings({ apiKey });
+    }
+  },
+
+  clearMessages: () => {
+    set({ messages: [] });
+  },
+
+  // WebContainer Integration
+  initializeWebContainer: async () => {
+    try {
+      const instance = await WebContainerSingleton.getInstance();
+      const aiOperations = new AIFileOperations(instance, enhancedAIService);
+
+      set({
+        webContainerInstance: instance,
+        aiFileOperations: aiOperations
+      });
+    } catch (error) {
+      console.error('Failed to initialize WebContainer:', error);
+    }
+  },
+
+  // AI File Operations
+  executeAIFileOperation: async (operation: FileOperation) => {
+    const { aiFileOperations } = get();
+    if (!aiFileOperations) return;
+
+    let result;
+    switch (operation.type) {
+      case 'create':
+        result = await aiFileOperations.createFileFromAI(
+          operation.fileName!,
+          operation.content!,
+          operation.context
+        );
+        break;
+      case 'modify':
+        result = await aiFileOperations.modifyFileFromAI(
+          operation.fileName!,
+          operation.instruction!,
+          operation.content!
+        );
+        break;
+      case 'delete':
+        result = await aiFileOperations.deleteFileFromAI(
+          operation.fileName!,
+          operation.instruction!
+        );
+        break;
+      case 'execute':
+        result = await aiFileOperations.executeAICommand(
+          operation.command!,
+          operation.instruction!
+        );
+        break;
+    }
+
+    // Update chat with operation result
+    const resultMessage: ChatMessage = {
+      id: Date.now().toString(),
+      role: 'assistant',
+      content: `File operation ${result.success ? 'succeeded' : 'failed'}: ${result.message}`,
+      timestamp: new Date(),
+    };
+
+    set(state => ({
+      messages: [...state.messages, resultMessage]
+    }));
+  },
+
+  // Settings Management
+  updateSettings: (newSettings: Partial<ChatState['settings']>) => {
+    const currentSettings = get().settings;
+    const updatedSettings = { ...currentSettings, ...newSettings };
+
+    set({ settings: updatedSettings });
+
+    // Save to localStorage
+    localStorage.setItem('autocode_ai_settings', JSON.stringify(updatedSettings));
+
+    // Update OpenRouter service
+    if (updatedSettings.apiKey) {
+      OpenRouterService.setApiKey(updatedSettings.apiKey);
+    }
+  },
+}));
+```
+
+### Enhanced ChatBot Component
+
+The actual Enhanced ChatBot component provides the main AI interface with streaming responses and settings:
+
+```typescript
+// client/src/components/ChatBot/EnhancedChatBot.tsx - Actual Implementation
+export const EnhancedChatBot: React.FC = () => {
+  const {
+    messages,
+    isLoading,
+    model,
+    apiKey,
+    availableModels,
+    settings,
+    sendMessage,
+    clearMessages,
+    setModel,
+    setApiKey,
+    loadModels,
+    updateSettings
+  } = useChatStore();
+
+  const [input, setInput] = useState('');
+  const [showSettings, setShowSettings] = useState(false);
+  const [tempApiKey, setTempApiKey] = useState('');
+
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  // Load models on component mount
+  useEffect(() => {
+    loadModels();
+    setTempApiKey(settings.apiKey);
+  }, [loadModels, settings.apiKey]);
+
+  // Auto-scroll to bottom
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages]);
+
+  // Handle message sending
+  const handleSendMessage = async () => {
+    if (!input.trim() || isLoading) return;
+
+    try {
+      await sendMessage(input.trim());
+      setInput('');
+      textareaRef.current?.focus();
+    } catch (error) {
+      console.error('Failed to send message:', error);
     }
   };
 
+  // Handle keyboard shortcuts
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
-      sendMessage();
+      handleSendMessage();
+    } else if (e.key === 'Escape') {
+      setInput('');
+    }
+  };
+
+  // Handle API key save
+  const handleSaveApiKey = () => {
+    if (tempApiKey.trim()) {
+      setApiKey(tempApiKey.trim());
+      setShowSettings(false);
     }
   };
 
   return (
-    <div className="chatbot">
-      <div className="chatbot-header">
-        <h3>AI Assistant</h3>
-        <button onClick={() => setMessages([])} className="clear-btn">
-          Clear
-        </button>
+    <div className="flex flex-col h-full bg-white border border-gray-200 rounded-lg shadow-sm">
+      {/* Header */}
+      <div className="flex items-center justify-between p-4 border-b border-gray-200">
+        <div className="flex items-center space-x-2">
+          <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
+          <h3 className="font-semibold text-gray-900">AI Assistant</h3>
+        </div>
+        <div className="flex items-center space-x-2">
+          <button
+            onClick={() => setShowSettings(!showSettings)}
+            className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+            title="Settings"
+          >
+            <Settings className="w-4 h-4" />
+          </button>
+          <button
+            onClick={clearMessages}
+            className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+            title="Clear messages"
+          >
+            <Trash2 className="w-4 h-4" />
+          </button>
+        </div>
       </div>
 
-      <div className="chatbot-messages">
+      {/* Settings Panel */}
+      {showSettings && (
+        <div className="border-b border-gray-200 p-4 bg-gray-50">
+          <div className="space-y-4">
+            {/* API Key Input */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                OpenRouter API Key
+              </label>
+              <div className="flex space-x-2">
+                <input
+                  type="password"
+                  value={tempApiKey}
+                  onChange={(e) => setTempApiKey(e.target.value)}
+                  placeholder="sk-..."
+                  className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+                <button
+                  onClick={handleSaveApiKey}
+                  disabled={!tempApiKey.trim()}
+                  className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 disabled:bg-gray-300 disabled:cursor-not-allowed"
+                >
+                  Save
+                </button>
+              </div>
+            </div>
+
+            {/* Model Selection */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                AI Model
+              </label>
+              <select
+                value={model}
+                onChange={(e) => setModel(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                {availableModels.map((model) => (
+                  <option key={model.id} value={model.id}>
+                    {model.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Temperature */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Temperature: {settings.temperature}
+              </label>
+              <input
+                type="range"
+                min="0"
+                max="2"
+                step="0.1"
+                value={settings.temperature}
+                onChange={(e) => updateSettings({ temperature: parseFloat(e.target.value) })}
+                className="w-full"
+              />
+            </div>
+
+            {/* Max Tokens */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Max Tokens: {settings.maxTokens}
+              </label>
+              <input
+                type="range"
+                min="100"
+                max="4000"
+                step="100"
+                value={settings.maxTokens}
+                onChange={(e) => updateSettings({ maxTokens: parseInt(e.target.value) })}
+                className="w-full"
+              />
+            </div>
+
+            {/* Streaming Toggle */}
+            <div className="flex items-center">
+              <input
+                type="checkbox"
+                id="streaming"
+                checked={settings.streaming}
+                onChange={(e) => updateSettings({ streaming: e.target.checked })}
+                className="mr-2"
+              />
+              <label htmlFor="streaming" className="text-sm text-gray-700">
+                Enable streaming responses
+              </label>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Messages */}
+      <div className="flex-1 overflow-y-auto p-4 space-y-4">
+        {!apiKey && (
+          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+            <div className="flex items-center space-x-2">
+              <AlertCircle className="w-5 h-5 text-yellow-600" />
+              <div>
+                <p className="text-sm font-medium text-yellow-800">
+                  API Key Required
+                </p>
+                <p className="text-sm text-yellow-700">
+                  Please configure your OpenRouter API key to use the AI assistant.
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
         {messages.map((message) => (
           <div
             key={message.id}
-            className={`message ${message.role} ${message.isStreaming ? 'streaming' : ''}`}
+            className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
           >
-            <div className="message-content">
-              <ReactMarkdown>{message.content}</ReactMarkdown>
-              {message.isStreaming && <span className="cursor">|</span>}
-            </div>
-            <div className="message-time">
-              {message.timestamp.toLocaleTimeString()}
+            <div
+              className={`max-w-[80%] rounded-lg px-4 py-2 ${
+                message.role === 'user'
+                  ? 'bg-blue-500 text-white'
+                  : 'bg-gray-100 text-gray-900'
+              }`}
+            >
+              <div className="prose prose-sm max-w-none">
+                <ReactMarkdown>{message.content}</ReactMarkdown>
+              </div>
+              <div className="text-xs mt-1 opacity-70">
+                {message.timestamp.toLocaleTimeString()}
+              </div>
             </div>
           </div>
         ))}
+
+        {isLoading && (
+          <div className="flex justify-start">
+            <div className="bg-gray-100 text-gray-900 rounded-lg px-4 py-2 max-w-[80%]">
+              <div className="flex items-center space-x-2">
+                <div className="animate-spin w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full"></div>
+                <span className="text-sm">Thinking...</span>
+              </div>
+            </div>
+          </div>
+        )}
+
         <div ref={messagesEndRef} />
       </div>
 
-      <div className="chatbot-input">
-        <textarea
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          onKeyPress={handleKeyPress}
-          placeholder="Ask me anything about your code..."
-          disabled={isLoading}
-          rows={3}
-        />
-        <button
-          onClick={sendMessage}
-          disabled={isLoading || !input.trim()}
-          className="send-btn"
-        >
-          {isLoading ? '...' : 'Send'}
-        </button>
+      {/* Input */}
+      <div className="border-t border-gray-200 p-4">
+        <div className="flex space-x-2">
+          <textarea
+            ref={textareaRef}
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            onKeyPress={handleKeyPress}
+            placeholder={
+              apiKey
+                ? "Ask me anything about your code..."
+                : "Configure your API key to start chatting..."
+            }
+            disabled={isLoading || !apiKey}
+            rows={3}
+            className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none disabled:bg-gray-100 disabled:cursor-not-allowed"
+          />
+          <button
+            onClick={handleSendMessage}
+            disabled={isLoading || !input.trim() || !apiKey}
+            className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 disabled:bg-gray-300 disabled:cursor-not-allowed"
+          >
+            {isLoading ? (
+              <div className="animate-spin w-4 h-4 border-2 border-white border-t-transparent rounded-full"></div>
+            ) : (
+              <Send className="w-4 h-4" />
+            )}
+          </button>
+        </div>
       </div>
     </div>
   );
 };
 ```
 
-## Model Selection and Performance
+## AI File Operations
 
-### Model Router
+The AI integration includes powerful file operations that allow the AI assistant to create, modify, and delete files directly in the WebContainer environment:
 
-```typescript
-// services/AIModelRouter.ts
-export interface ModelCapabilities {
-  codeGeneration: boolean;
-  codeExplanation: boolean;
-  debugging: boolean;
-  refactoring: boolean;
-  maxTokens: number;
-  costPerToken: number;
-  speed: 'fast' | 'medium' | 'slow';
-}
+### File Operation Types
 
-export const MODEL_CAPABILITIES: Record<string, ModelCapabilities> = {
-  'anthropic/claude-3.5-sonnet': {
-    codeGeneration: true,
-    codeExplanation: true,
-    debugging: true,
-    refactoring: true,
-    maxTokens: 200000,
-    costPerToken: 0.000003,
-    speed: 'medium'
-  },
-  'openai/gpt-4': {
-    codeGeneration: true,
-    codeExplanation: true,
-    debugging: true,
-    refactoring: true,
-    maxTokens: 128000,
-    costPerToken: 0.00003,
-    speed: 'medium'
-  },
-  'meta-llama/llama-3.1-70b-instruct': {
-    codeGeneration: true,
-    codeExplanation: true,
-    debugging: true,
-    refactoring: false,
-    maxTokens: 131072,
-    costPerToken: 0.000001,
-    speed: 'fast'
-  },
-  'google/gemini-pro': {
-    codeGeneration: true,
-    codeExplanation: true,
-    debugging: false,
-    refactoring: false,
-    maxTokens: 32768,
-    costPerToken: 0.000001,
-    speed: 'fast'
-  }
-};
+1. **Create Files**: AI can generate new files based on user descriptions
+2. **Modify Files**: AI can edit existing files based on instructions
+3. **Delete Files**: AI can safely remove files when appropriate
+4. **Execute Commands**: AI can run shell commands in the WebContainer
 
-export class AIModelRouter {
-  selectOptimalModel(
-    task: 'code_generation' | 'code_explanation' | 'debugging' | 'refactoring',
-    context: AIContext,
-    preferences?: {
-      budget?: 'low' | 'medium' | 'high';
-      speed?: 'fast' | 'balanced' | 'quality';
-    }
-  ): string {
-    const availableModels = Object.entries(MODEL_CAPABILITIES)
-      .filter(([_, capabilities]) => capabilities[task])
-      .map(([model]) => model);
+### AI File Operation Flow
 
-    if (availableModels.length === 0) {
-      return 'anthropic/claude-3.5-sonnet'; // Default fallback
-    }
+```mermaid
+sequenceDiagram
+    participant User
+    participant ChatBot as Enhanced ChatBot
+    participant Store as enhancedChatStore
+    participant AIFileOps as AI File Operations
+    participant WebContainer as WebContainer
 
-    // Score models based on criteria
-    const scoredModels = availableModels.map(model => ({
-      model,
-      score: this.calculateModelScore(model, task, context, preferences)
-    }));
+    User->>ChatBot: "Create a React component for user profile"
+    ChatBot->>Store: sendMessage()
+    Store->>Store: Build context and send to AI
+    Store-->>AIFileOps: executeAIFileOperation()
+    AIFileOps->>WebContainer: Create file
+    WebContainer-->>AIFileOps: File created successfully
+    AIFileOps-->>Store: Operation result
+    Store-->>ChatBot: Update chat with result
+    ChatBot-->>User: "✅ Component created successfully"
+```
 
-    // Return model with highest score
-    scoredModels.sort((a, b) => b.score - a.score);
-    return scoredModels[0].model;
-  }
+## Performance and Caching
 
-  private calculateModelScore(
-    model: string,
-    task: string,
-    context: AIContext,
-    preferences?: any
-  ): number {
-    const capabilities = MODEL_CAPABILITIES[model];
-    let score = 0;
+### Model Caching Strategy
 
-    // Base capability score
-    if (capabilities[task]) {
-      score += 50;
-    }
+```mermaid
+graph TB
+    subgraph "OpenRouter Service Caching"
+        ModelCache[Model Cache<br/>1 Hour Duration]
+        LocalStorage[localStorage<br/>Persistent Storage]
+        CacheValidation[Cache Validation<br/>Timestamp Check]
+        CacheRefresh[Cache Refresh<br/>Automatic Updates]
+    end
 
-    // Context size score
-    if (context.activeFile?.content) {
-      const contentSize = context.activeFile.content.length;
-      if (contentSize < capabilities.maxTokens * 0.5) {
-        score += 20;
-      } else if (contentSize < capabilities.maxTokens * 0.8) {
-        score += 10;
-      }
-    }
+    subgraph "Performance Optimization"
+        StreamingResponses[Streaming Responses<br/>Real-time Updates]
+        ModelSelection[Model Selection<br/>Free Models Priority]
+        RequestSize[Request Size Limits<br/>100KB Max]
+        ErrorHandling[Error Handling<br/>Graceful Fallbacks]
+    end
 
-    // Speed preference
-    if (preferences?.speed === 'fast' && capabilities.speed === 'fast') {
-      score += 15;
-    } else if (preferences?.speed === 'quality' && capabilities.speed === 'medium') {
-      score += 10;
-    }
+    subgraph "User Experience"
+        LoadingStates[Loading States<br/>Visual Feedback]
+        AutoScroll[Auto-scroll<br/>Message History]
+        SettingsPersistence[Settings Persistence<br/>localStorage]
+        KeyboardShortcuts[Keyboard Shortcuts<br/>Enter/Escape]
+    end
 
-    // Budget preference
-    if (preferences?.budget === 'low' && capabilities.costPerToken < 0.000002) {
-      score += 20;
-    } else if (preferences?.budget === 'high') {
-      score += 5; // Favor capability over cost
-    }
+    ModelCache --> LocalStorage
+    LocalStorage --> CacheValidation
+    CacheValidation --> CacheRefresh
+    CacheRefresh --> ModelSelection
 
-    return score;
-  }
-}
+    ModelSelection --> StreamingResponses
+    StreamingResponses --> RequestSize
+    RequestSize --> ErrorHandling
+    ErrorHandling --> LoadingStates
+
+    LoadingStates --> AutoScroll
+    AutoScroll --> SettingsPersistence
+    SettingsPersistence --> KeyboardShortcuts
+    KeyboardShortcuts --> User
 ```
 
 ## Security and Best Practices
 
-### API Security
+### API Security Implementation
+
+The AI integration includes several security measures:
 
 ```typescript
-// services/SecureAIService.ts
-export class SecureAIService extends OpenRouterService {
-  private readonly maxRequestSize = 100000; // 100KB
-  private readonly allowedModels = [
-    'anthropic/claude-3.5-sonnet',
-    'openai/gpt-4',
-    'meta-llama/llama-3.1-70b-instruct',
-    'google/gemini-pro'
-  ];
-
-  async sendMessage(messages: ChatMessage[], options?: any): Promise<AIResponse> {
-    // Validate request size
-    const totalSize = messages.reduce((sum, msg) => sum + msg.content.length, 0);
-    if (totalSize > this.maxRequestSize) {
-      throw new Error('Request too large');
-    }
-
-    // Sanitize messages
-    const sanitizedMessages = messages.map(msg => ({
-      ...msg,
-      content: this.sanitizeContent(msg.content)
-    }));
-
-    // Validate model
-    if (options?.model && !this.allowedModels.includes(options.model)) {
-      throw new Error('Model not allowed');
-    }
-
-    return super.sendMessage(sanitizedMessages, options);
+// Security Features in OpenRouter Service
+export class SecurityFeatures {
+  // 1. API Key Validation
+  static isValidApiKey(apiKey: string): boolean {
+    return apiKey.trim().length > 0 && apiKey.startsWith('sk-');
   }
 
-  private sanitizeContent(content: string): string {
-    // Remove sensitive information
+  // 2. Request Size Limits
+  private static readonly MAX_REQUEST_SIZE = 100000; // 100KB
+
+  // 3. Error Handling
+  static handleError(error: any): string {
+    console.error('OpenRouter API error:', error);
+    return error.message || 'Unknown error occurred';
+  }
+
+  // 4. Content Sanitization
+  static sanitizeContent(content: string): string {
+    // Remove potential sensitive information
     return content
       .replace(/password\s*[:=]\s*\S+/gi, 'password: [REDACTED]')
       .replace(/api[_-]?key\s*[:=]\s*\S+/gi, 'api_key: [REDACTED]')
@@ -988,27 +983,85 @@ export class SecureAIService extends OpenRouterService {
 }
 ```
 
+### WebContainer Security Integration
+
+The AI file operations are sandboxed within the WebContainer environment:
+
+```mermaid
+graph TB
+    subgraph "Security Layers"
+        BrowserSecurity[Browser Security<br/>Native Sandbox]
+        WebContainerSandbox[WebContainer Sandbox<br/>Isolated Environment]
+        AICommandValidation[AI Command Validation<br/>Safety Checks]
+        FileSystemPermissions[File System Permissions<br/>Restricted Access]
+    end
+
+    subgraph "Protected Operations"
+        SafeFileCreation[Safe File Creation<br/>AI Validated]
+        CommandExecution[Command Execution<br/>Safety Filtered]
+        ContentSanitization[Content Sanitization<br/>No Sensitive Data]
+        ErrorBoundaries[Error Boundaries<br/>Graceful Handling]
+    end
+
+    subgraph "User Safety"
+        APIKeyStorage[API Key Storage<br/>Local Only]
+        ModelRestrictions[Model Restrictions<br/>Approved Models Only]
+        OperationLogging[Operation Logging<br/>Audit Trail]
+        UserConsent[User Consent<br/>Explicit Operations]
+    end
+
+    BrowserSecurity --> WebContainerSandbox
+    WebContainerSandbox --> AICommandValidation
+    AICommandValidation --> FileSystemPermissions
+
+    FileSystemPermissions --> SafeFileCreation
+    SafeFileCreation --> CommandExecution
+    CommandExecution --> ContentSanitization
+    ContentSanitization --> ErrorBoundaries
+
+    ErrorBoundaries --> APIKeyStorage
+    APIKeyStorage --> ModelRestrictions
+    ModelRestrictions --> UserConsent
+    UserConsent --> User
+
+    style BrowserSecurity fill:#007ACC,color:#fff
+    style WebContainerSandbox fill:#9C27B0,color:#fff
+    style AICommandValidation fill:#4CAF50,color:#fff
+    style UserConsent fill:#FF6B35,color:#fff
+```
+
 ## Chapter Summary
 
-In this chapter, we've explored AutoCode's comprehensive AI integration:
+In this chapter, we've explored the actual AI integration in AutoCode based on the real implementation:
 
-- ✅ **OpenRouter API integration** with multiple AI models
-- ✅ **Context management** for intelligent, relevant AI responses
-- ✅ **Code generation** with context-aware assistance
-- ✅ **Real-time chat interface** with streaming responses
-- ✅ **Model selection** based on task requirements and preferences
-- ✅ **Security measures** for safe AI interactions
-- ✅ **Performance optimization** with caching and routing
+- ✅ **OpenRouter Service**: Comprehensive API integration with caching, streaming, and model management
+- ✅ **Enhanced Chat Store**: Zustand-based state management with AI operations and WebContainer integration
+- ✅ **Streaming Responses**: Real-time AI chat with chunked responses
+- ✅ **Enhanced ChatBot Component**: Full-featured AI interface with settings and model selection
+- ✅ **AI File Operations**: Secure file creation, modification, and deletion within WebContainer
+- ✅ **Free Model Support**: Intelligent model selection prioritizing free options
+- ✅ **Performance Optimization**: Caching, streaming, and request size limits
+- ✅ **Security Measures**: API key validation, content sanitization, and sandboxed execution
 
 ### Key AI Features
 
-1. **Intelligent Code Generation**: Context-aware code creation
-2. **Real-time Assistance**: Streaming chat interface
-3. **Multi-Model Support**: Access to various AI models
-4. **Smart Context Management**: Project-aware responses
-5. **Security-First Design**: Safe AI interactions
+1. **Real-Time Streaming**: Instant AI responses with live chat updates
+2. **Multi-Model Access**: Support for various AI models via OpenRouter
+3. **Context-Aware Responses**: AI understands project structure and current files
+4. **Secure File Operations**: AI can safely manipulate files within WebContainer
+5. **Intelligent Model Selection**: Automatically selects the best available free model
+6. **Persistent Settings**: User preferences and API keys saved locally
 
-> **🔑 Key Takeaway:** AI integration transforms AutoCode from a simple editor into an intelligent development assistant, providing contextual help, code generation, and real-time assistance while maintaining security and performance.
+### Technical Benefits
+
+- **🚀 Performance**: Streaming responses and intelligent caching
+- **🔒 Security**: Sandboxed execution and content sanitization
+- **🧠 Intelligence**: Context-aware AI with project understanding
+- **💾 Persistence**: Settings and API keys stored locally
+- **⚡ Real-Time**: Live updates and streaming responses
+- **🎯 User Experience**: Intuitive interface with rich settings
+
+> **🔑 Key Takeaway:** AutoCode's AI integration provides a sophisticated, secure, and user-friendly AI assistant that enhances the development experience through intelligent code assistance, real-time collaboration, and seamless file operations within the secure WebContainer environment.
 
 ---
 

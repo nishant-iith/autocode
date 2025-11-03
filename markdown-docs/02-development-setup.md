@@ -2,87 +2,275 @@
 
 ## Prerequisites and Environment Setup
 
-This chapter will guide you through setting up a complete development environment for AutoCode, including all necessary tools, dependencies, and configurations.
+This chapter will guide you through setting up a complete development environment for AutoCode, including all necessary tools, dependencies, and configurations based on the actual project implementation.
 
-### System Requirements
+## System Requirements
 
-#### Operating System Support
-- **Windows**: Windows 10 or later (with WSL2 recommended)
+### Operating System Support
+- **Windows**: Windows 10 or later
 - **macOS**: macOS 10.15 or later
 - **Linux**: Any modern distribution (Ubuntu 18.04+, CentOS 7+, etc.)
 
-#### Required Software
+### Required Software
 
 | Tool | Minimum Version | Recommended Version | Purpose |
 |------|----------------|-------------------|---------|
 | **Node.js** | 18.x.x | 20.x.x LTS | JavaScript runtime |
 | **npm** | 8.x.x | 10.x.x | Package manager |
 | **Git** | 2.30.0 | 2.40.0+ | Version control |
-| **VS Code** | 1.70.0 | Latest | IDE (recommended) |
-| **Chrome** | 90.0 | Latest | Development browser |
 
-### Development Tools Installation
+## Project Setup
 
-#### Installing Node.js and npm
+### Clone the Repository
 
-**Option 1: Official Installer (Recommended)**
 ```bash
-# Download from https://nodejs.org/
-# Choose the LTS version for stability
+# Clone the repository
+git clone https://github.com/your-org/autocode.git
+cd autocode
+
+# Verify the structure
+ls -la
 ```
 
-**Option 2: Using Version Manager**
-```bash
-# For macOS/Linux with nvm
-curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.0/install.sh | bash
-nvm install --lts
-nvm use --lts
+### Install Dependencies
 
-# For Windows with nvm-windows
-# Download from https://github.com/coreybutler/nvm-windows
+The project uses a monorepo structure with separate dependencies for client and server.
+
+#### Root Dependencies
+
+```bash
+# Install root-level dependencies (includes concurrently for running both servers)
+npm install
 ```
 
-**Verification:**
+#### Client Dependencies
+
 ```bash
-node --version  # Should show v18.x.x or higher
-npm --version   # Should show 8.x.x or higher
+# Navigate to client directory
+cd client
+
+# Install frontend dependencies
+npm install
+
+# Return to root
+cd ..
 ```
 
-#### Installing Git
+#### Server Dependencies
 
-**Windows:**
 ```bash
-# Download from https://git-scm.com/download/win
-# or use winget
-winget install --id Git.Git -e --source winget
+# Navigate to server directory
+cd server
+
+# Install backend dependencies
+npm install
+
+# Return to root
+cd ..
 ```
 
-**macOS:**
-```bash
-# Using Homebrew
-brew install git
+### All-in-One Installation
 
-# Or download from https://git-scm.com/download/mac
+You can install all dependencies at once using the root script:
+
+```bash
+# Install all dependencies for the entire project
+npm run install:all
 ```
 
-**Linux (Ubuntu/Debian):**
-```bash
-sudo apt update
-sudo apt install git
+## Project Structure Overview
+
+```
+autocode/
+├── client/                    # React frontend application
+│   ├── src/
+│   │   ├── components/         # Reusable React components
+│   │   │   ├── ChatBot/        # ChatBot components
+│   │   │   ├── modals/         # Modal components
+│   │   │   ├── Editor.tsx      # Main editor component
+│   │   │   ├── Sidebar.tsx     # File explorer sidebar
+│   │   │   └── ...
+│   │   ├── store/              # Zustand state management
+│   │   │   ├── enhancedChatStore.ts  # Chat state management
+│   │   │   ├── editorStore.ts      # Editor state
+│   │   │   ├── projectStore.ts     # Project management state
+│   │   │   └── sidebarStore.ts     # Sidebar state
+│   │   ├── services/           # API and external services
+│   │   │   ├── openRouter.ts    # OpenRouter AI service
+│   │   │   ├── enhancedAIService.ts  # Enhanced AI features
+│   │   │   ├── aiFileOperations.ts   # AI file operations
+│   │   │   └── ...
+│   │   ├── providers/          # React context providers
+│   │   │   └── WebContainerProvider.tsx
+│   │   ├── utils/              # Utility functions
+│   │   └── App.tsx             # Main application component
+│   ├── public/                 # Static assets
+│   ├── package.json           # Frontend dependencies
+│   ├── vite.config.ts         # Vite configuration
+│   └── tailwind.config.js     # Tailwind CSS configuration
+├── server/                   # Node.js backend application
+│   ├── src/
+│   │   ├── routes/            # Express route handlers
+│   │   │   ├── files.js       # File management routes
+│   │   │   ├── projects.js    # Project management routes
+│   │   │   └── templates.js   # Template routes
+│   │   ├── config/            # Server configuration
+│   │   │   └── swagger.js     # API documentation
+│   │   ├── views/              # Server views
+│   │   │   └── api-docs.html  # API documentation page
+│   │   └── workspaces/         # User workspaces storage
+│   ├── package.json           # Backend dependencies
+│   └── index.js               # Server entry point
+├── markdown-docs/            # This documentation
+├── package.json              # Root package.json with scripts
+└── README.md                 # Project README
 ```
 
-#### Visual Studio Code Setup
+## Development Workflow
 
-**Installation:**
+### Running the Development Servers
+
+The project uses a concurrent development setup to run both frontend and backend simultaneously.
+
+#### Option 1: Using Root Package Scripts (Recommended)
+
 ```bash
-# Download from https://code.visualstudio.com/
-# or use package manager:
-# Windows: winget install Microsoft.VisualStudioCode
-# macOS: brew install --cask visual-studio-code
-# Linux: snap install code --classic
+# Start both client and server simultaneously
+npm run dev
+
+# This runs:
+# - npm run client:dev  (Frontend on http://localhost:5173)
+# - npm run server:dev  (Backend on http://localhost:5000)
 ```
 
-**Recommended Extensions:**
+#### Option 2: Separate Terminals
+
+**Terminal 1 - Backend:**
+```bash
+cd server
+npm run dev
+# Server runs on http://localhost:5000
+```
+
+**Terminal 2 - Frontend:**
+```bash
+cd client
+npm run dev
+# Client runs on http://localhost:5173
+```
+
+### Development Workflow Diagram
+
+```mermaid
+graph LR
+    Dev[Developer] --> Edit[Code Editor]
+    Edit --> Frontend[React Dev Server:5173]
+    Edit --> Backend[Express Dev Server:5000]
+
+    Frontend --> HMR[Hot Module Reload]
+    Backend --> Nodemon[Auto-restart on changes]
+
+    Frontend -.->|API Calls| Backend
+    Backend -->|WebSocket| Frontend
+
+    HMR --> Browser[Browser Updates]
+    Nodemon --> Browser
+
+    style Dev fill:#e1f5fe
+    style Frontend fill:#f3e5f5
+    style Backend fill:#e8f5e8
+    style Browser fill:#fff3e0
+```
+
+## Configuration
+
+### Environment Variables
+
+No explicit environment variables are required for basic development. The application is configured to work out of the box with default settings.
+
+#### Optional Environment Variables
+
+You can create a `.env` file in the server directory for additional configuration:
+
+```env
+# Server Configuration
+PORT=5000
+NODE_ENV=development
+```
+
+### Frontend Configuration
+
+The frontend uses Vite for development and building. Key configuration files:
+
+**`client/vite.config.ts`**:
+- Vite configuration with React plugin
+- Development server settings
+- Build optimization
+
+**`client/tailwind.config.js`**:
+- Tailwind CSS configuration
+- VS Code theme colors
+- Custom design system
+
+### Backend Configuration
+
+**`server/index.js`**: Main server configuration
+- Express server setup
+- Socket.IO for real-time features
+- CORS configuration for frontend communication
+- Swagger API documentation
+- File system management
+
+## Key Development Features
+
+### Frontend Features
+
+1. **Hot Module Replacement (HMR)**: Instant UI updates during development
+2. **TypeScript Support**: Full type safety with TypeScript
+3. **ESLint Integration**: Code quality and consistency checks
+4. **Tailwind CSS**: Utility-first CSS with VS Code theme
+5. **Monaco Editor**: Professional code editing experience
+
+### Backend Features
+
+1. **Auto-restart**: Server automatically restarts on file changes
+2. **API Documentation**: Interactive Swagger documentation at `/api-docs`
+3. **Real-time Communication**: Socket.IO for live collaboration
+4. **File Management**: Secure file storage and workspace management
+5. **CORS Configuration**: Proper cross-origin setup for development
+
+### AI Integration
+
+1. **OpenRouter API**: AI model integration with multiple model support
+2. **Streaming Responses**: Real-time AI chat responses
+3. **Context Management**: AI understands project structure and current files
+4. **File Operations**: AI can create, modify, and delete files
+5. **Enhanced Chat Interface**: Advanced chat with settings and model selection
+
+## Browser Support
+
+### Required Browser Features
+
+For WebContainer functionality to work properly, ensure your browser supports:
+
+- **WebAssembly**: Enabled by default in modern browsers
+- **SharedArrayBuffer**: Required for WebContainer
+- **Cross-Origin Isolation**: May need specific headers in production
+- **CORS Policies**: Properly configured for development
+
+### Recommended Browsers
+
+- **Chrome 90+** (Recommended for development)
+- **Firefox 88+**
+- **Safari 14+**
+- **Edge 90+**
+
+## Development Tools
+
+### IDE Configuration
+
+#### VS Code Extensions (Recommended)
+
 ```json
 {
   "recommendations": [
@@ -100,547 +288,38 @@ sudo apt install git
 }
 ```
 
-## Project Setup
+### Code Quality Tools
 
-### Cloning the Repository
+#### Frontend (.eslintrc.cjs)
+- React hooks rules
+- TypeScript checking
+- Prettier integration
+- Import organization
+
+#### Linting Commands
 
 ```bash
-# Clone the repository
-git clone https://github.com/your-org/autocode.git
-cd autocode
-
-# Verify the structure
-ls -la
-```
-
-### Project Structure Overview
-
-```
-autocode/
-├── client/                 # React frontend
-│   ├── src/
-│   │   ├── components/     # Reusable components
-│   │   ├── pages/         # Page components
-│   │   ├── hooks/         # Custom hooks
-│   │   ├── store/         # State management
-│   │   ├── services/      # API services
-│   │   └── utils/         # Utility functions
-│   ├── public/            # Static assets
-│   ├── package.json       # Frontend dependencies
-│   └── vite.config.ts     # Vite configuration
-├── server/                # Node.js backend
-│   ├── src/
-│   │   ├── routes/        # Express routes
-│   │   ├── services/      # Business logic
-│   │   ├── middleware/    # Custom middleware
-│   │   ├── utils/         # Server utilities
-│   │   └── config/        # Configuration
-│   ├── docs/              # API documentation
-│   └── package.json       # Backend dependencies
-├── shared/                # Shared types and utilities
-├── markdown-docs/         # This documentation
-├── package.json           # Root package.json
-└── README.md
-```
-
-### Installing Dependencies
-
-#### Root Dependencies
-```bash
-# Install root-level dependencies
-npm install
-```
-
-#### Client Dependencies
-```bash
-# Navigate to client directory
+# Lint frontend code
 cd client
-
-# Install frontend dependencies
-npm install
-
-# Return to root
-cd ..
+npm run lint
 ```
 
-#### Server Dependencies
-```bash
-# Navigate to server directory
-cd server
+## API Documentation
 
-# Install backend dependencies
-npm install
+### Interactive API Documentation
 
-# Return to root
-cd ..
-```
+Once the server is running, you can access interactive API documentation:
 
-### Environment Configuration
+- **Swagger UI**: http://localhost:5000/api-docs
+- **API JSON**: http://localhost:5000/api-docs.json
+- **API Root**: http://localhost:5000/api (redirects to docs)
 
-#### Environment Variables
+### Available Endpoints
 
-Create environment files for different environments:
-
-**`.env` (Development):**
-```env
-# Server Configuration
-PORT=3001
-NODE_ENV=development
-
-# Client Configuration
-VITE_API_URL=http://localhost:3001
-VITE_WS_URL=ws://localhost:3001
-
-# AI Configuration
-VITE_OPENROUTER_API_KEY=your_openrouter_api_key_here
-VITE_DEFAULT_AI_MODEL=anthropic/claude-3.5-sonnet
-
-# WebContainer Configuration
-VITE_WEBCONTAINER_ENABLED=true
-
-# Security
-JWT_SECRET=your_super_secret_jwt_key_here
-CORS_ORIGIN=http://localhost:5173
-
-# File Storage
-UPLOAD_DIR=./uploads
-MAX_FILE_SIZE=10485760  # 10MB
-
-# Database (if using)
-# DATABASE_URL=mongodb://localhost:27017/autocode
-```
-
-**`.env.production` (Production):**
-```env
-NODE_ENV=production
-PORT=3001
-
-# Production URLs
-VITE_API_URL=https://api.autocode.dev
-VITE_WS_URL=wss://api.autocode.dev
-
-# Production AI Configuration
-VITE_OPENROUTER_API_KEY=${OPENROUTER_API_KEY}
-VITE_DEFAULT_AI_MODEL=anthropic/claude-3.5-sonnet
-
-# Production Security
-JWT_SECRET=${JWT_SECRET}
-CORS_ORIGIN=https://autocode.dev
-
-# Production File Storage
-UPLOAD_DIR=/var/www/uploads
-MAX_FILE_SIZE=10485760
-
-# SSL/HTTPS
-HTTPS_ENABLED=true
-SSL_CERT_PATH=/etc/ssl/certs/autocode.crt
-SSL_KEY_PATH=/etc/ssl/private/autocode.key
-```
-
-#### Environment Setup Script
-
-Create a setup script to automate environment configuration:
-
-**`scripts/setup-env.sh`:**
-```bash
-#!/bin/bash
-
-echo "🚀 Setting up AutoCode development environment..."
-
-# Check if .env file exists
-if [ ! -f .env ]; then
-    echo "📝 Creating .env file..."
-    cp .env.example .env
-    echo "⚠️  Please edit .env file with your configuration"
-else
-    echo "✅ .env file already exists"
-fi
-
-# Check client .env
-if [ ! -f client/.env ]; then
-    echo "📝 Creating client .env file..."
-    cat > client/.env << EOF
-VITE_API_URL=http://localhost:3001
-VITE_WS_URL=ws://localhost:3001
-VITE_OPENROUTER_API_KEY=your_api_key_here
-EOF
-    echo "⚠️  Please edit client/.env with your OpenRouter API key"
-else
-    echo "✅ Client .env file already exists"
-fi
-
-# Create required directories
-echo "📁 Creating required directories..."
-mkdir -p server/uploads
-mkdir -p server/logs
-mkdir -p client/dist
-
-# Set permissions
-chmod +x scripts/*.sh
-
-echo "✅ Environment setup complete!"
-echo "📖 Next steps:"
-echo "   1. Edit .env files with your configuration"
-echo "   2. Run 'npm run dev' to start development servers"
-```
-
-## Development Workflow
-
-### Running the Development Servers
-
-The project uses a concurrent development setup to run both frontend and backend simultaneously.
-
-#### Option 1: Using Root Package Scripts
-
-**Add to root `package.json`:**
-```json
-{
-  "scripts": {
-    "dev": "concurrently \"npm run dev:server\" \"npm run dev:client\"",
-    "dev:client": "cd client && npm run dev",
-    "dev:server": "cd server && npm run dev",
-    "build": "npm run build:client && npm run build:server",
-    "build:client": "cd client && npm run build",
-    "build:server": "cd server && npm run build",
-    "start": "cd server && npm start",
-    "test": "npm run test:client && npm run test:server",
-    "test:client": "cd client && npm test",
-    "test:server": "cd server && npm test",
-    "lint": "npm run lint:client && npm run lint:server",
-    "lint:client": "cd client && npm run lint",
-    "lint:server": "cd server && npm run lint",
-    "setup": "chmod +x scripts/setup-env.sh && ./scripts/setup-env.sh"
-  },
-  "devDependencies": {
-    "concurrently": "^8.2.0"
-  }
-}
-```
-
-**Start Development:**
-```bash
-# Start both client and server
-npm run dev
-
-# Or start individually
-npm run dev:client  # Frontend on http://localhost:5173
-npm run dev:server  # Backend on http://localhost:3001
-```
-
-#### Option 2: Separate Terminals
-
-**Terminal 1 - Backend:**
-```bash
-cd server
-npm run dev
-# Server runs on http://localhost:3001
-```
-
-**Terminal 2 - Frontend:**
-```bash
-cd client
-npm run dev
-# Client runs on http://localhost:5173
-```
-
-### Development Workflow Diagram
-
-```mermaid
-graph LR
-    Dev[Developer] --> Edit[Code Editor]
-    Edit --> Frontend[React Dev Server:5173]
-    Edit --> Backend[Express Dev Server:3001]
-
-    Frontend --> HMR[Hot Module Reload]
-    Backend --> Nodemon[Auto-restart on changes]
-
-    Frontend -.->|API Calls| Backend
-    Backend -->|WebSocket| Frontend
-
-    HMR --> Browser[Browser Updates]
-    Nodemon --> Browser
-
-    style Dev fill:#e1f5fe
-    style Frontend fill:#f3e5f5
-    style Backend fill:#e8f5e8
-    style Browser fill:#fff3e0
-```
-
-## IDE Configuration
-
-### VS Code Workspace Settings
-
-Create `.vscode/settings.json`:
-```json
-{
-  "typescript.preferences.importModuleSpecifier": "relative",
-  "editor.formatOnSave": true,
-  "editor.defaultFormatter": "esbenp.prettier-vscode",
-  "editor.codeActionsOnSave": {
-    "source.fixAll.eslint": true,
-    "source.organizeImports": true
-  },
-  "emmet.includeLanguages": {
-    "typescript": "html",
-    "typescriptreact": "html"
-  },
-  "files.associations": {
-    "*.css": "tailwindcss"
-  },
-  "editor.quickSuggestions": {
-    "strings": true
-  },
-  "tailwindCSS.includeLanguages": {
-    "typescript": "html",
-    "typescriptreact": "html"
-  }
-}
-```
-
-### VS Code Tasks
-
-Create `.vscode/tasks.json`:
-```json
-{
-  "version": "2.0.0",
-  "tasks": [
-    {
-      "label": "Start Development Servers",
-      "type": "shell",
-      "command": "npm",
-      "args": ["run", "dev"],
-      "group": {
-        "kind": "build",
-        "isDefault": true
-      },
-      "presentation": {
-        "echo": true,
-        "reveal": "always",
-        "focus": false,
-        "panel": "new"
-      },
-      "problemMatcher": []
-    },
-    {
-      "label": "Run Tests",
-      "type": "shell",
-      "command": "npm",
-      "args": ["test"],
-      "group": "test",
-      "presentation": {
-        "echo": true,
-        "reveal": "always",
-        "focus": false,
-        "panel": "new"
-      }
-    },
-    {
-      "label": "Build Project",
-      "type": "shell",
-      "command": "npm",
-      "args": ["run", "build"],
-      "group": "build",
-      "presentation": {
-        "echo": true,
-        "reveal": "always",
-        "focus": false,
-        "panel": "new"
-      }
-    }
-  ]
-}
-```
-
-### VS Code Launch Configuration
-
-Create `.vscode/launch.json`:
-```json
-{
-  "version": "0.2.0",
-  "configurations": [
-    {
-      "name": "Debug Server",
-      "type": "node",
-      "request": "launch",
-      "program": "${workspaceFolder}/server/src/index.js",
-      "outFiles": ["${workspaceFolder}/server/dist/**/*.js"],
-      "env": {
-        "NODE_ENV": "development"
-      },
-      "console": "integratedTerminal",
-      "restart": true,
-      "runtimeExecutable": "nodemon"
-    },
-    {
-      "name": "Debug Client",
-      "type": "chrome",
-      "request": "launch",
-      "url": "http://localhost:5173",
-      "webRoot": "${workspaceFolder}/client/src",
-      "sourceMaps": true,
-      "userDataDir": false,
-      "runtimeArgs": ["--remote-debugging-port=9222"]
-    }
-  ]
-}
-```
-
-## Code Quality Tools
-
-### ESLint Configuration
-
-**Client ESLint (`.eslintrc.js` in client/):**
-```javascript
-module.exports = {
-  root: true,
-  env: { browser: true, es2020: true },
-  extends: [
-    'eslint:recommended',
-    '@typescript-eslint/recommended',
-    'plugin:react-hooks/recommended',
-    'plugin:react/recommended',
-    'plugin:react/jsx-runtime'
-  ],
-  ignorePatterns: ['dist', '.eslintrc.cjs'],
-  parser: '@typescript-eslint/parser',
-  plugins: ['react-refresh'],
-  rules: {
-    'react-refresh/only-export-components': [
-      'warn',
-      { allowConstantExport: true },
-    ],
-    'react/prop-types': 'off',
-    '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_' }],
-    'prefer-const': 'error',
-    'no-var': 'error'
-  },
-  settings: {
-    react: {
-      version: 'detect'
-    }
-  }
-}
-```
-
-**Server ESLint (`.eslintrc.js` in server/):**
-```javascript
-module.exports = {
-  env: {
-    node: true,
-    es2021: true,
-    jest: true
-  },
-  extends: [
-    'eslint:recommended',
-    '@typescript-eslint/recommended'
-  ],
-  parser: '@typescript-eslint/parser',
-  parserOptions: {
-    ecmaVersion: 12,
-    sourceType: 'module'
-  },
-  rules: {
-    '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_' }],
-    'prefer-const': 'error',
-    'no-var': 'error',
-    'no-console': 'warn'
-  }
-}
-```
-
-### Prettier Configuration
-
-Create `.prettierrc`:
-```json
-{
-  "semi": true,
-  "trailingComma": "es5",
-  "singleQuote": true,
-  "printWidth": 80,
-  "tabWidth": 2,
-  "useTabs": false,
-  "bracketSpacing": true,
-  "arrowParens": "avoid"
-}
-```
-
-### Husky and Git Hooks
-
-**Install Husky:**
-```bash
-npm install --save-dev husky
-npx husky install
-npm pkg set scripts.prepare="husky install"
-```
-
-**Pre-commit hook:**
-```bash
-npx husky add .husky/pre-commit "npm run lint && npm run test"
-```
-
-**Pre-push hook:**
-```bash
-npx husky add .husky/pre-push "npm run build"
-```
-
-## Testing Setup
-
-### Client Testing
-
-**Vitest Configuration (`vitest.config.ts` in client/):**
-```typescript
-import { defineConfig } from 'vitest/config';
-import react from '@vitejs/plugin-react';
-import path from 'path';
-
-export default defineConfig({
-  plugins: [react()],
-  test: {
-    globals: true,
-    environment: 'jsdom',
-    setupFiles: ['./src/test/setup.ts'],
-    css: true
-  },
-  resolve: {
-    alias: {
-      '@': path.resolve(__dirname, './src')
-    }
-  }
-});
-```
-
-**Test Setup (`client/src/test/setup.ts`):**
-```typescript
-import '@testing-library/jest-dom';
-import { cleanup } from '@testing-library/react';
-import { afterEach } from 'vitest';
-
-afterEach(() => {
-  cleanup();
-});
-```
-
-### Server Testing
-
-**Jest Configuration (`jest.config.js` in server/):**
-```javascript
-module.exports = {
-  preset: 'ts-jest',
-  testEnvironment: 'node',
-  roots: ['<rootDir>/src'],
-  testMatch: ['**/__tests__/**/*.ts', '**/?(*.)+(spec|test).ts'],
-  transform: {
-    '^.+\\.ts$': 'ts-jest'
-  },
-  collectCoverageFrom: [
-    'src/**/*.ts',
-    '!src/**/*.d.ts',
-    '!src/test/**'
-  ],
-  coverageDirectory: 'coverage',
-  coverageReporters: ['text', 'lcov', 'html']
-};
-```
+- **File Management**: `/api/files/*`
+- **Project Management**: `/api/projects/*`
+- **Templates**: `/api/templates/*`
+- **Health Check**: `/api/health`
 
 ## Troubleshooting
 
@@ -649,15 +328,23 @@ module.exports = {
 #### Port Already in Use
 ```bash
 # Find process using port
-lsof -i :3001  # macOS/Linux
-netstat -ano | findstr :3001  # Windows
+netstat -ano | findstr :5000  # Windows
+lsof -i :5000               # macOS/Linux
 
 # Kill process
-kill -9 <PID>  # macOS/Linux
-taskkill /PID <PID> /F  # Windows
+taskkill /PID <PID> /F     # Windows
+kill -9 <PID>               # macOS/Linux
 ```
 
-#### Node Modules Issues
+#### WebContainer Issues
+
+1. **Browser Compatibility**: Ensure you're using a supported browser
+2. **HTTPS in Production**: WebContainer requires HTTPS in production environments
+3. **Memory Issues**: Close other tabs to free up browser memory
+4. **CORS Headers**: Check browser console for CORS errors
+
+#### Dependency Issues
+
 ```bash
 # Clear npm cache
 npm cache clean --force
@@ -673,28 +360,17 @@ cd client && rm -rf node_modules package-lock.json && npm install
 cd server && rm -rf node_modules package-lock.json && npm install
 ```
 
-#### TypeScript Errors
+#### Development Server Issues
+
 ```bash
-# Check TypeScript version
-npx tsc --version
+# Check if ports are available
+netstat -an | grep :5173  # Client port
+netstat -an | grep :5000  # Server port
 
-# Rebuild type definitions
-npm run build
-
-# Clear TypeScript cache
-npx tsc --build --clean
-```
-
-#### Environment Variables Not Loading
-```bash
-# Verify .env file exists
-ls -la .env
-
-# Check for syntax errors in .env
-cat .env
-
-# Restart development server after changes
+# Restart services
 npm run dev
+
+# Check logs for errors
 ```
 
 ### Performance Issues
@@ -705,55 +381,43 @@ npm run dev
 export NODE_OPTIONS="--max-old-space-size=4096"
 
 # Use Vite's experimental features
-# Add to vite.config.ts:
-export default defineConfig({
-  server: {
-    hmr: {
-      overlay: false
-    }
-  }
-})
+# Add to vite.config.ts if needed
 ```
 
-#### Build Optimization
-```bash
-# Analyze bundle size
-npm run build -- --analyze
+#### Build Issues
 
-# Enable source maps in development
-# Add to vite.config.ts:
-export default defineConfig({
-  build: {
-    sourcemap: true
-  }
-})
+```bash
+# Build frontend
+cd client
+npm run build
+
+# Check for TypeScript errors
+npx tsc --noEmit
 ```
 
 ## Chapter Summary
 
-In this chapter, we've covered the complete development setup for AutoCode:
+In this chapter, we've covered the complete development setup for AutoCode based on the actual implementation:
 
 - ✅ System requirements and prerequisites
-- ✅ Installation of development tools
-- ✅ Project cloning and dependency installation
-- ✅ Environment configuration
-- ✅ Development workflow setup
-- ✅ IDE configuration and tools
-- ✅ Code quality tools configuration
-- ✅ Testing setup
+- ✅ Installation of development tools and dependencies
+- ✅ Project structure and organization
+- ✅ Development workflow with concurrent servers
+- ✅ Configuration details for frontend and backend
+- ✅ API documentation access
 - ✅ Troubleshooting common issues
 
 ### Next Steps
 
 With your development environment properly set up, you're now ready to:
 
-1. **Start Development**: Run `npm run dev` to start the development servers
-2. **Explore Code**: Browse the project structure and understand the codebase
-3. **Make Changes**: Start developing new features or fixing bugs
-4. **Run Tests**: Ensure your changes don't break existing functionality
-5. **Build Project**: Create production builds when ready
+1. **Start Development**: Run `npm run dev` to start both servers
+2. **Explore the Application**: Open http://localhost:5173 in your browser
+3. **Check API Documentation**: Visit http://localhost:5000/api-docs
+4. **Experiment with Features**: Try the AI chat, file operations, and WebContainer
+5. **Review the Code**: Examine the actual implementation in `client/src` and `server/src`
 
-> **🔑 Key Takeaway:** A properly configured development environment is crucial for productive development. Take the time to set up all tools and configurations correctly to ensure a smooth development experience.
+> **🔑 Key Takeaway**: AutoCode's development environment is designed for productivity with hot reloading, comprehensive tooling, and seamless integration between frontend and backend services.
 
 ---
 
