@@ -21,33 +21,53 @@ export interface Project {
 }
 
 interface ProjectState {
+  projects: Project[];
   currentProject: Project | null;
   fileTree: FileNode[];
   isLoading: boolean;
   error: string | null;
 
   // Actions
+  setProjects: (projects: Project[]) => void;
   setCurrentProject: (project: Project | null) => void;
+  loadProjects: () => Promise<void>;
   loadFileTree: () => Promise<void>;
   createProject: (name: string, description?: string) => Promise<void>;
   createFromTemplate: (templateId: string, name?: string) => Promise<void>;
   importFromZip: (zipFile: File) => Promise<void>;
   importFromGithub: (repoUrl: string, accessToken?: string) => Promise<void>;
+  deleteProject: (workspaceId: string) => Promise<void>;
   closeProject: () => Promise<void>;
   toggleFolder: (path: string) => void;
   refreshFileTree: () => Promise<void>;
 }
 
 export const useProjectStore = create<ProjectState>((set, get) => ({
+  projects: [],
   currentProject: null,
   fileTree: [],
   isLoading: false,
   error: null,
 
+  setProjects: (projects) => set({ projects }),
+
   setCurrentProject: (project) => {
     set({ currentProject: project });
     if (project) {
       get().loadFileTree();
+    }
+  },
+
+  loadProjects: async () => {
+    set({ isLoading: true, error: null });
+    try {
+      const projects = await api.getProjects();
+      set({ projects, isLoading: false });
+    } catch (error) {
+      set({
+        error: error instanceof Error ? error.message : 'Failed to load projects',
+        isLoading: false
+      });
     }
   },
 
@@ -84,7 +104,11 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
         modified: new Date(),
       };
 
-      set({ currentProject: newProject, isLoading: false });
+      set(state => ({
+        currentProject: newProject,
+        projects: [newProject, ...state.projects],
+        isLoading: false
+      }));
       await get().loadFileTree();
     } catch (error) {
       set({
@@ -110,7 +134,11 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
         modified: new Date(),
       };
 
-      set({ currentProject: newProject, isLoading: false });
+      set(state => ({
+        currentProject: newProject,
+        projects: [newProject, ...state.projects],
+        isLoading: false
+      }));
       await get().loadFileTree();
     } catch (error) {
       set({
@@ -136,7 +164,11 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
         modified: new Date(),
       };
 
-      set({ currentProject: newProject, isLoading: false });
+      set(state => ({
+        currentProject: newProject,
+        projects: [newProject, ...state.projects],
+        isLoading: false
+      }));
       await get().loadFileTree();
     } catch (error) {
       set({
@@ -162,7 +194,11 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
         modified: new Date(),
       };
 
-      set({ currentProject: newProject, isLoading: false });
+      set(state => ({
+        currentProject: newProject,
+        projects: [newProject, ...state.projects],
+        isLoading: false
+      }));
       await get().loadFileTree();
     } catch (error) {
       set({
@@ -173,30 +209,39 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
     }
   },
 
+  deleteProject: async (workspaceId: string) => {
+    set({ isLoading: true, error: null });
+    try {
+      await api.deleteProject(workspaceId);
+
+      set(state => {
+        const updatedProjects = state.projects.filter(p => p.workspaceId !== workspaceId);
+        // If deleted project was current, clear current
+        const currentProject = state.currentProject?.workspaceId === workspaceId ? null : state.currentProject;
+
+        return {
+          projects: updatedProjects,
+          currentProject,
+          isLoading: false
+        };
+      });
+    } catch (error) {
+      set({
+        error: error instanceof Error ? error.message : 'Failed to delete project',
+        isLoading: false
+      });
+    }
+  },
+
   /**
    * Close the current project and clear all state
    */
   closeProject: async () => {
-    const { currentProject } = get();
-    if (!currentProject) return;
-
-    set({ isLoading: true, error: null });
-    try {
-      // Optionally delete from backend
-      await api.deleteProject(currentProject.workspaceId);
-
-      set({
-        currentProject: null,
-        fileTree: [],
-        isLoading: false
-      });
-    } catch (error) {
-      set({
-        error: error instanceof Error ? error.message : 'Failed to close project',
-        isLoading: false
-      });
-      throw error;
-    }
+    set({
+      currentProject: null,
+      fileTree: [],
+      isLoading: false
+    });
   },
 
   toggleFolder: (path) => {

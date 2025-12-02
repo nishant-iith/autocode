@@ -81,7 +81,7 @@ export const useWebContainerOps = () => {
         );
 
         // Listen for server-ready event
-        webcontainer.on('server-ready', (port, url) => {
+        webcontainer.on('server-ready', (_port, url) => {
           addLog(`✅ Server running at ${url}`);
           setPreviewUrl(url);
         });

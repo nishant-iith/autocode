@@ -648,7 +648,7 @@ async function processFileOperations(
     console.log('✅ Found file operations:', {
       artifacts: artifacts.length,
       standaloneActions: standaloneActions.length,
-      totalActions: artifacts.reduce((sum, a) => sum + a.actions.length, 0) + standaloneActions.length
+      totalActions: artifacts.reduce((sum: number, a: AIArtifact) => sum + a.actions.length, 0) + standaloneActions.length
     });
 
     // Execute artifacts

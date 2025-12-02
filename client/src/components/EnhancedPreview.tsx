@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useState, useCallback } from 'react';
 import {
   Eye,
   Globe,
@@ -228,33 +228,30 @@ const EnhancedPreview: React.FC = () => {
           {/* Device View Options */}
           <button
             onClick={() => setDeviceView('desktop')}
-            className={`p-2 rounded-md transition-colors ${
-              deviceView === 'desktop'
+            className={`p-2 rounded-md transition-colors ${deviceView === 'desktop'
                 ? 'bg-vscode-border text-vscode-text'
                 : 'hover:bg-vscode-border/50 text-vscode-text-muted hover:text-vscode-text'
-            }`}
+              }`}
             title="Desktop View"
           >
             <Monitor size={16} />
           </button>
           <button
             onClick={() => setDeviceView('tablet')}
-            className={`p-2 rounded-md transition-colors ${
-              deviceView === 'tablet'
+            className={`p-2 rounded-md transition-colors ${deviceView === 'tablet'
                 ? 'bg-vscode-border text-vscode-text'
                 : 'hover:bg-vscode-border/50 text-vscode-text-muted hover:text-vscode-text'
-            }`}
+              }`}
             title="Tablet View"
           >
             <Tablet size={16} />
           </button>
           <button
             onClick={() => setDeviceView('mobile')}
-            className={`p-2 rounded-md transition-colors ${
-              deviceView === 'mobile'
+            className={`p-2 rounded-md transition-colors ${deviceView === 'mobile'
                 ? 'bg-vscode-border text-vscode-text'
                 : 'hover:bg-vscode-border/50 text-vscode-text-muted hover:text-vscode-text'
-            }`}
+              }`}
             title="Mobile View"
           >
             <Smartphone size={16} />
@@ -265,11 +262,10 @@ const EnhancedPreview: React.FC = () => {
           {/* Terminal Toggle */}
           <button
             onClick={() => setShowTerminal(!showTerminal)}
-            className={`p-2 rounded-md transition-colors ${
-              showTerminal
+            className={`p-2 rounded-md transition-colors ${showTerminal
                 ? 'bg-vscode-border text-vscode-text'
                 : 'hover:bg-vscode-border/50 text-vscode-text-muted hover:text-vscode-text'
-            }`}
+              }`}
             title="Toggle Terminal"
           >
             <Terminal size={16} />
@@ -292,9 +288,8 @@ const EnhancedPreview: React.FC = () => {
       <div className="flex-1 flex flex-col overflow-hidden">
         {/* Main Preview Area */}
         <div
-          className={`${
-            showTerminal ? 'flex-1' : 'h-full'
-          } flex items-center justify-center bg-gray-100 p-4 overflow-auto`}
+          className={`${showTerminal ? 'flex-1' : 'h-full'
+            } flex items-center justify-center bg-gray-100 p-4 overflow-auto`}
         >
           {previewUrl ? (
             <iframe
