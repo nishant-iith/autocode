@@ -1,5 +1,15 @@
+
 import React, { useState } from 'react';
-import { Plus, Upload, Code, Zap, Sparkles } from 'lucide-react';
+import {
+  Code,
+  Zap,
+  Rocket,
+  LayoutTemplate,
+  DownloadCloud,
+  Cpu,
+  Globe,
+  Keyboard
+} from 'lucide-react';
 import CreateProjectModal from './modals/CreateProjectModal';
 import ImportModal from './modals/ImportModal';
 import TemplateModal from './modals/TemplateModal';
@@ -14,124 +24,108 @@ const Welcome: React.FC = () => {
   const [showImportModal, setShowImportModal] = useState(false);
   const [showTemplateModal, setShowTemplateModal] = useState(false);
 
+  const ActionCard = ({
+    title,
+    description,
+    icon: Icon,
+    colorClass,
+    onClick
+  }: {
+    title: string;
+    description: string;
+    icon: React.ElementType;
+    colorClass: string;
+    onClick: () => void;
+  }) => (
+    <button
+      onClick={onClick}
+      className="group relative flex flex-col items-start p-6 h-full bg-vscode-panel/40 border border-vscode-border rounded-2xl hover:bg-vscode-panel/80 hover:border-vscode-accent/50 transition-all duration-300 hover:shadow-2xl hover:-translate-y-1 overflow-hidden"
+    >
+      <div className={`absolute top-0 right-0 p-32 opacity-[0.03] transform translate-x-12 -translate-y-12 group-hover:scale-110 transition-transform duration-700 ${colorClass}`}>
+        <Icon size={200} />
+      </div>
+
+      <div className={`p-4 rounded-xl mb-6 bg-vscode-bg/50 border border-vscode-border/50 group-hover:scale-110 transition-transform duration-300 ${colorClass} bg-opacity-10`}>
+        <Icon size={32} className={colorClass.replace('bg-', 'text-')} />
+      </div>
+
+      <h3 className="text-xl font-bold text-vscode-text mb-2 group-hover:text-white transition-colors">
+        {title}
+      </h3>
+
+      <p className="text-sm text-vscode-text-muted leading-relaxed text-left group-hover:text-vscode-text-muted/80">
+        {description}
+      </p>
+    </button>
+  );
+
+  const FeatureItem = ({ icon: Icon, label }: { icon: React.ElementType, label: string }) => (
+    <div className="flex items-center space-x-2 text-vscode-text-muted/60 bg-vscode-panel/30 px-3 py-1.5 rounded-full border border-vscode-border/30">
+      <Icon size={14} />
+      <span className="text-xs font-medium">{label}</span>
+    </div>
+  );
+
   return (
-    <div className="h-full bg-gradient-to-br from-vscode-editor via-vscode-editor to-vscode-panel/20 flex items-center justify-center overflow-auto">
-      <div className="max-w-4xl mx-auto p-4 sm:p-8 text-center w-full animate-in fade-in duration-700">
-        <div className="mb-12 animate-in slide-in-from-top-2 fade-in duration-1000">
-          <div className="flex items-center justify-center mb-6 group">
-            <div className="relative">
-              <Code size={48} className="text-blue-400 mr-4 transition-all duration-500 group-hover:scale-110 group-hover:rotate-6" />
-              <Sparkles size={16} className="absolute -top-2 -right-1 text-yellow-400 animate-pulse" />
-            </div>
-            <div className="text-left">
-              <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
-                AutoCode
-              </h1>
-              <div className="flex items-center mt-1">
-                <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse mr-2" />
-                <span className="text-xs text-green-400 font-medium">Online & Ready</span>
-              </div>
-            </div>
+    <div className="h-full bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-vscode-panel via-vscode-editor to-vscode-editor flex items-center justify-center overflow-auto">
+      <div className="max-w-5xl mx-auto p-6 sm:p-12 w-full animate-in fade-in duration-700">
+
+        {/* Hero Section */}
+        <div className="text-center mb-16 space-y-6">
+          <div className="inline-flex items-center justify-center p-2 bg-vscode-panel/50 rounded-full border border-vscode-border/50 mb-4 backdrop-blur-sm animate-in slide-in-from-top-4 fade-in duration-1000">
+            <span className="relative flex h-2 w-2 mr-2">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
+            </span>
+            <span className="text-xs font-medium text-vscode-text-muted tracking-wide uppercase">System Online</span>
           </div>
-          <div className="space-y-2">
-            <p className="text-lg text-vscode-text font-medium">
-              Professional Code Editor Experience in Your Browser
-            </p>
-            <p className="text-sm text-vscode-text-muted/80">
-              Create or import a project to get started
-            </p>
-          </div>
+
+          <h1 className="text-5xl sm:text-7xl font-extrabold tracking-tight text-transparent bg-clip-text bg-gradient-to-b from-white via-gray-200 to-gray-500 drop-shadow-sm">
+            AutoCode
+          </h1>
+
+          <p className="text-lg sm:text-xl text-vscode-text-muted max-w-2xl mx-auto leading-relaxed font-light">
+            The next-generation browser IDE. <br className="hidden sm:block" />
+            Build, run, and deploy Node.js applications instantly.
+          </p>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-12 animate-in slide-in-from-bottom-2 fade-in duration-1000 delay-300">
-          <button
+        {/* Actions Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-16 max-w-4xl mx-auto">
+          <ActionCard
+            title="New Project"
+            description="Initialize a fresh Node.js environment with zero configuration."
+            icon={Rocket}
+            colorClass="text-blue-400"
             onClick={() => setShowCreateModal(true)}
-            className="p-6 bg-vscode-panel border border-vscode-border rounded-xl hover:bg-gradient-to-br hover:from-vscode-border hover:to-blue-500/10 transition-all duration-300 text-left group hover-lift hover-glow"
-          >
-            <div className="flex items-center mb-3">
-              <div className="p-3 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg mr-4 group-hover:scale-110 transition-transform duration-300">
-                <Plus size={20} className="text-white" />
-              </div>
-              <h3 className="text-base font-semibold text-vscode-text group-hover:text-white transition-colors duration-300">
-                New Project
-              </h3>
-            </div>
-            <p className="text-sm text-vscode-text-muted group-hover:text-vscode-text-muted/90 leading-relaxed">
-              Start fresh with an empty Node.js project
-            </p>
-          </button>
+          />
 
-          <button
+          <ActionCard
+            title="Use Template"
+            description="Jumpstart with pre-built stacks like React, Vue, or Express."
+            icon={LayoutTemplate}
+            colorClass="text-green-400"
             onClick={() => setShowTemplateModal(true)}
-            className="p-6 bg-vscode-panel border border-vscode-border rounded-xl hover:bg-gradient-to-br hover:from-vscode-border hover:to-green-500/10 transition-all duration-300 text-left group hover-lift hover-glow"
-          >
-            <div className="flex items-center mb-3">
-              <div className="p-3 bg-gradient-to-br from-green-500 to-green-600 rounded-lg mr-4 group-hover:scale-110 transition-transform duration-300">
-                <Zap size={20} className="text-white" />
-              </div>
-              <h3 className="text-base font-semibold text-vscode-text group-hover:text-white transition-colors duration-300">
-                Use Template
-              </h3>
-            </div>
-            <p className="text-sm text-vscode-text-muted group-hover:text-vscode-text-muted/90 leading-relaxed">
-              Quick start with Express.js, React, or other templates
-            </p>
-          </button>
+          />
 
-          <button
+          <ActionCard
+            title="Import Project"
+            description="Bring your own code from a ZIP archive or GitHub repository."
+            icon={DownloadCloud}
+            colorClass="text-purple-400"
             onClick={() => setShowImportModal(true)}
-            className="p-6 bg-vscode-panel border border-vscode-border rounded-xl hover:bg-gradient-to-br hover:from-vscode-border hover:to-purple-500/10 transition-all duration-300 text-left group hover-lift hover-glow"
-          >
-            <div className="flex items-center mb-3">
-              <div className="p-3 bg-gradient-to-br from-purple-500 to-purple-600 rounded-lg mr-4 group-hover:scale-110 transition-transform duration-300">
-                <Upload size={20} className="text-white" />
-              </div>
-              <h3 className="text-base font-semibold text-vscode-text group-hover:text-white transition-colors duration-300">
-                Import Project
-              </h3>
-            </div>
-            <p className="text-sm text-vscode-text-muted group-hover:text-vscode-text-muted/90 leading-relaxed">
-              Import from ZIP file or Git repository
-            </p>
-          </button>
+          />
         </div>
 
-        <div className="mt-12 pt-8 border-t border-vscode-border/50 animate-in fade-in duration-1000 delay-500">
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6 text-sm text-vscode-text-muted">
-            <div>
-              <strong className="text-vscode-text text-xs">Features:</strong>
-              <ul className="mt-1 space-y-1">
-                <li>• Monaco Editor</li>
-                <li>• IntelliSense</li>
-                <li>• Syntax Highlighting</li>
-              </ul>
-            </div>
-            <div>
-              <strong className="text-vscode-text text-xs">File Management:</strong>
-              <ul className="mt-1 space-y-1">
-                <li>• File Explorer</li>
-                <li>• Multi-tab Editing</li>
-                <li>• Auto-save</li>
-              </ul>
-            </div>
-            <div>
-              <strong className="text-vscode-text text-xs">Import Options:</strong>
-              <ul className="mt-1 space-y-1">
-                <li>• ZIP Upload</li>
-                <li>• Git Import</li>
-                <li>• Templates</li>
-              </ul>
-            </div>
-            <div>
-              <strong className="text-vscode-text text-xs">Shortcuts:</strong>
-              <ul className="mt-1 space-y-1">
-                <li>• Ctrl+S (Save)</li>
-                <li>• Ctrl+Shift+P (Command)</li>
-                <li>• Ctrl+, (Settings)</li>
-              </ul>
-            </div>
-          </div>
+        {/* Footer Features */}
+        <div className="flex flex-wrap justify-center gap-4 animate-in slide-in-from-bottom-4 fade-in duration-1000 delay-300">
+          <FeatureItem icon={Cpu} label="WebContainer Engine" />
+          <FeatureItem icon={Code} label="Monaco Editor" />
+          <FeatureItem icon={Zap} label="Instant HMR" />
+          <FeatureItem icon={Globe} label="Offline Capable" />
+          <FeatureItem icon={Keyboard} label="Vim Mode Support" />
         </div>
+
       </div>
 
       {showCreateModal && (

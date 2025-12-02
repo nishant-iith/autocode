@@ -8,11 +8,12 @@ import {
   Play,
   Square,
   RefreshCw,
-  Terminal,
+  Terminal as TerminalIcon,
   X,
   Loader,
   AlertCircle,
 } from 'lucide-react';
+import Terminal from './Terminal';
 import { useWebContainerInstance } from '../providers/WebContainerProvider';
 import { useWebContainerStore } from '../store/webcontainerStore';
 import { useWebContainerOps } from '../hooks/useWebContainerOps';
@@ -229,8 +230,8 @@ const EnhancedPreview: React.FC = () => {
           <button
             onClick={() => setDeviceView('desktop')}
             className={`p-2 rounded-md transition-colors ${deviceView === 'desktop'
-                ? 'bg-vscode-border text-vscode-text'
-                : 'hover:bg-vscode-border/50 text-vscode-text-muted hover:text-vscode-text'
+              ? 'bg-vscode-border text-vscode-text'
+              : 'hover:bg-vscode-border/50 text-vscode-text-muted hover:text-vscode-text'
               }`}
             title="Desktop View"
           >
@@ -239,8 +240,8 @@ const EnhancedPreview: React.FC = () => {
           <button
             onClick={() => setDeviceView('tablet')}
             className={`p-2 rounded-md transition-colors ${deviceView === 'tablet'
-                ? 'bg-vscode-border text-vscode-text'
-                : 'hover:bg-vscode-border/50 text-vscode-text-muted hover:text-vscode-text'
+              ? 'bg-vscode-border text-vscode-text'
+              : 'hover:bg-vscode-border/50 text-vscode-text-muted hover:text-vscode-text'
               }`}
             title="Tablet View"
           >
@@ -249,8 +250,8 @@ const EnhancedPreview: React.FC = () => {
           <button
             onClick={() => setDeviceView('mobile')}
             className={`p-2 rounded-md transition-colors ${deviceView === 'mobile'
-                ? 'bg-vscode-border text-vscode-text'
-                : 'hover:bg-vscode-border/50 text-vscode-text-muted hover:text-vscode-text'
+              ? 'bg-vscode-border text-vscode-text'
+              : 'hover:bg-vscode-border/50 text-vscode-text-muted hover:text-vscode-text'
               }`}
             title="Mobile View"
           >
@@ -263,12 +264,12 @@ const EnhancedPreview: React.FC = () => {
           <button
             onClick={() => setShowTerminal(!showTerminal)}
             className={`p-2 rounded-md transition-colors ${showTerminal
-                ? 'bg-vscode-border text-vscode-text'
-                : 'hover:bg-vscode-border/50 text-vscode-text-muted hover:text-vscode-text'
+              ? 'bg-vscode-border text-vscode-text'
+              : 'hover:bg-vscode-border/50 text-vscode-text-muted hover:text-vscode-text'
               }`}
             title="Toggle Terminal"
           >
-            <Terminal size={16} />
+            <TerminalIcon size={16} />
           </button>
 
           {/* Open in Browser */}
@@ -326,7 +327,7 @@ const EnhancedPreview: React.FC = () => {
           <div className="h-64 bg-black border-t border-vscode-border flex flex-col flex-shrink-0">
             <div className="h-8 bg-vscode-panel border-b border-vscode-border flex items-center justify-between px-3">
               <div className="flex items-center gap-2 text-xs text-vscode-text">
-                <Terminal size={12} />
+                <TerminalIcon size={12} />
                 Terminal Output
               </div>
               <button
@@ -336,18 +337,8 @@ const EnhancedPreview: React.FC = () => {
                 <X size={14} />
               </button>
             </div>
-            <div className="flex-1 overflow-auto p-3 font-mono text-xs text-green-400 vscode-scrollbar">
-              {logs.length > 0 ? (
-                logs.map((log, index) => (
-                  <div key={index} className="whitespace-pre-wrap">
-                    {log}
-                  </div>
-                ))
-              ) : (
-                <div className="text-gray-500">
-                  No logs yet. Run your project to see output.
-                </div>
-              )}
+            <div className="flex-1 overflow-hidden relative">
+              <Terminal logs={logs} />
             </div>
           </div>
         )}
