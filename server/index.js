@@ -11,6 +11,7 @@ import { dirname } from 'path';
 import fileRoutes from './routes/files.js';
 import projectRoutes from './routes/projects.js';
 import templateRoutes from './routes/templates.js';
+import aiRoutes from './routes/ai.js';
 import { swaggerSpec, swaggerUi, swaggerUiOptions } from './config/swagger.js';
 
 dotenv.config();
@@ -27,7 +28,7 @@ const io = new Server(server, {
   }
 });
 
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 5001;
 
 // Security headers
 app.use((req, res, next) => {
@@ -77,6 +78,7 @@ app.get('/api', (req, res) => {
 app.use('/api/files', fileRoutes);
 app.use('/api/projects', projectRoutes);
 app.use('/api/templates', templateRoutes);
+app.use('/api/ai', aiRoutes);
 
 /**
  * @swagger
@@ -107,16 +109,16 @@ app.get('/api/health', (req, res) => {
 
 io.on('connection', (socket) => {
   console.log('Client connected:', socket.id);
-  
+
   socket.on('join-workspace', (workspaceId) => {
     socket.join(`workspace-${workspaceId}`);
     console.log(`Client ${socket.id} joined workspace ${workspaceId}`);
   });
-  
+
   socket.on('file-change', (data) => {
     socket.to(`workspace-${data.workspaceId}`).emit('file-changed', data);
   });
-  
+
   socket.on('disconnect', () => {
     console.log('Client disconnected:', socket.id);
   });

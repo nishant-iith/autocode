@@ -50,7 +50,7 @@ export interface ProjectScope {
  * Enhanced AI Service with automatic context and streaming capabilities
  */
 export class EnhancedAIService {
-  private static readonly BASE_URL = 'https://openrouter.ai/api/v1';
+  private static readonly BASE_URL = 'http://localhost:5000/api/ai';
   public config: AIServiceConfig;
   private projectScope?: ProjectScope;
   private abortController?: AbortController;
@@ -203,7 +203,7 @@ export class EnhancedAIService {
     conversationHistory: AIMessage[],
     systemPrompt: string,
     context?: ConversationContext
-  ): Array<{role: string, content: string}> {
+  ): Array<{ role: string, content: string }> {
     const messages = [
       {
         role: 'system' as string,
@@ -246,13 +246,11 @@ export class EnhancedAIService {
     messages: any[],
     onStream?: (response: StreamingResponse) => void
   ): Promise<string> {
-    const response = await fetch(`${EnhancedAIService.BASE_URL}/chat/completions`, {
+    const response = await fetch(`${EnhancedAIService.BASE_URL}/chat`, {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${this.config.apiKey}`,
         'Content-Type': 'application/json',
-        'HTTP-Referer': 'https://autocode.dev',
-        'X-Title': 'AutoCode AI Assistant'
+        'X-OpenRouter-Key': this.config.apiKey, // Send user's key to backend
       },
       body: JSON.stringify({
         model: this.config.model,
@@ -400,7 +398,7 @@ export class EnhancedAIService {
     }
 
     if (error.message?.includes('401')) {
-      return new Error('Invalid API key. Please check your OpenRouter API key.');
+      return new Error('Authentication failed. Please check the server API key configuration.');
     }
 
     if (error.message?.includes('429')) {

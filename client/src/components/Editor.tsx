@@ -1,10 +1,12 @@
-import React, { useRef, useEffect, useState, useCallback } from 'react';
+import React, { useRef, useEffect, useState, useCallback, useMemo } from 'react';
 import { Editor as MonacoEditor } from '@monaco-editor/react';
 import { editor } from 'monaco-editor';
 import { useEditorStore } from '../store/editorStore';
 import { useProjectStore } from '../store/projectStore';
 import { api } from '../services/api';
 import { useAutosave } from '../hooks/useAutosave';
+import { useWebContainerFileSync } from '../hooks/useWebContainerFileSync';
+import { debounce } from '../utils/debounce';
 
 const Editor: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
@@ -21,6 +23,17 @@ const Editor: React.FC = () => {
   } = useEditorStore();
   const { currentProject } = useProjectStore();
   const { scheduleAutosave, forceSave, isSaving } = useAutosave();
+  const { syncFile } = useWebContainerFileSync();
+
+  // Create a debounced sync function to avoid overwhelming the WebContainer
+  const debouncedSync = useMemo(
+    () => debounce((path: string, content: string) => {
+      syncFile(path, content).catch(err =>
+        console.error(`[Editor] Failed to sync ${path} to WebContainer:`, err)
+      );
+    }, 500), // 500ms delay
+    [syncFile]
+  );
 
   const handleEditorDidMount = useCallback((editorInstance: editor.IStandaloneCodeEditor, monaco: typeof import('monaco-editor')) => {
     editorRef.current = editorInstance;
@@ -101,7 +114,7 @@ const Editor: React.FC = () => {
       formatOnPaste: true,
       formatOnType: true,
     });
-    
+
     // Add performance optimizations
     editorInstance.onDidChangeModelContent(() => {
       // Debounced content change handling will be done by the parent handler
@@ -111,11 +124,14 @@ const Editor: React.FC = () => {
   const handleEditorChange = useCallback((value: string | undefined) => {
     if (activeFile && value !== undefined) {
       updateFileContent(activeFile.path, value);
-      
+
       // Schedule autosave when content changes
       scheduleAutosave(activeFile.path, value);
+
+      // Trigger real-time sync to WebContainer
+      debouncedSync(activeFile.path, value);
     }
-  }, [activeFile, updateFileContent, scheduleAutosave]);
+  }, [activeFile, updateFileContent, scheduleAutosave, debouncedSync]);
 
 
   useEffect(() => {
@@ -194,7 +210,7 @@ const Editor: React.FC = () => {
           codeLens: false,
         }}
       />
-      
+
       {/* Status indicators */}
       <div className="absolute top-3 right-3 flex flex-col space-y-2 z-10">
         {!editorReady && (

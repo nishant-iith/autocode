@@ -96,10 +96,10 @@ export class OpenRouterService {
       }
 
       const data: OpenRouterModelsResponse = await response.json();
-      
+
       // Cache the models
       this.cacheModels(data.data);
-      
+
       return data.data;
     } catch (error) {
       console.error('Error fetching models:', error);
@@ -112,14 +112,15 @@ export class OpenRouterService {
     const trulyFreeModels = models.filter(model => {
       const pricing = model.pricing;
       return pricing && (
-        pricing.prompt === '0' && 
-        pricing.completion === '0' && 
+        pricing.prompt === '0' &&
+        pricing.completion === '0' &&
         (pricing.request === '0' || pricing.request === null)
       );
     });
 
     if (trulyFreeModels.length > 0) {
-      return trulyFreeModels.slice(0, 10);
+      // Sort by name for better readability
+      return trulyFreeModels.sort((a, b) => a.name.localeCompare(b.name)).slice(0, 50);
     }
 
     // Fallback to commonly known free models
@@ -129,10 +130,13 @@ export class OpenRouterService {
       'huggingfaceh4/zephyr-7b-beta',
       'openchat/openchat-7b',
       'gryphe/mythomist-7b',
-      'undi95/toppy-m-7b'
+      'undi95/toppy-m-7b',
+      'deepseek',
+      'glm',
+      'qwen'
     ];
-    
-    const fallbackModels = models.filter(model => 
+
+    const fallbackModels = models.filter(model =>
       commonFreeModels.some(freeId => model.id.toLowerCase().includes(freeId.toLowerCase()))
     );
 
@@ -141,7 +145,7 @@ export class OpenRouterService {
       return models.slice(0, 5);
     }
 
-    return fallbackModels.slice(0, 10);
+    return fallbackModels.slice(0, 50);
   }
 
   static async sendMessage(
@@ -185,7 +189,7 @@ export class OpenRouterService {
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
         throw new Error(
-          errorData.error?.message || 
+          errorData.error?.message ||
           `API request failed: ${response.status} ${response.statusText}`
         );
       }
@@ -197,7 +201,7 @@ export class OpenRouterService {
 
       // Handle regular response
       const data = await response.json();
-      
+
       if (!data.choices || !data.choices[0] || !data.choices[0].message) {
         throw new Error('Invalid response format from API');
       }
@@ -210,7 +214,7 @@ export class OpenRouterService {
   }
 
   private static async handleStreamingResponse(
-    response: Response, 
+    response: Response,
     onChunk?: (chunk: string) => void
   ): Promise<string> {
     const reader = response.body!.getReader();
@@ -221,7 +225,7 @@ export class OpenRouterService {
       // eslint-disable-next-line no-constant-condition
       while (true) {
         const { done, value } = await reader.read();
-        
+
         if (done) break;
 
         const chunk = decoder.decode(value);
@@ -230,7 +234,7 @@ export class OpenRouterService {
         for (const line of lines) {
           if (line.startsWith('data: ')) {
             const data = line.slice(6);
-            
+
             if (data === '[DONE]') {
               return fullContent;
             }
@@ -238,7 +242,7 @@ export class OpenRouterService {
             try {
               const parsed = JSON.parse(data);
               const content = parsed.choices?.[0]?.delta?.content;
-              
+
               if (content) {
                 fullContent += content;
                 onChunk?.(content);
