@@ -1,12 +1,17 @@
 import React, { useEffect, useRef } from 'react';
-import { Bot, User, Copy, Check, Terminal } from 'lucide-react';
+import { Bot, User, Copy, Check, Terminal, FileCode, Zap } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import { ChatMessage as ChatMessageType } from '../services/openRouter';
+import { AIArtifact } from '../services/aiActionParser';
+
+interface ExtendedChatMessage extends ChatMessageType {
+  artifacts?: AIArtifact[];
+}
 
 interface ChatMessageProps {
-  message: ChatMessageType;
+  message: ExtendedChatMessage;
   isLast?: boolean;
 }
 
@@ -40,6 +45,14 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message, isLast }) => {
   }, [message.content, isLast]);
 
   const isUser = message.role === 'user';
+
+  // Function to strip artifact tags from content for display
+  const getCleanContent = (content: string) => {
+    return content.replace(/<(auto|bolt)Artifact[\s\S]*?<\/(auto|bolt)Artifact>/gi, '').trim();
+  };
+
+  const cleanContent = isUser ? message.content : getCleanContent(message.content);
+  const hasArtifacts = message.artifacts && message.artifacts.length > 0;
 
   return (
     <div
@@ -75,99 +88,135 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message, isLast }) => {
           {isUser ? (
             <div className="whitespace-pre-wrap">{message.content}</div>
           ) : (
-            <ReactMarkdown
-              components={{
-                code(props: { className?: string; children?: React.ReactNode; inline?: boolean }) {
-                  const { className, children, inline } = props;
-                  const match = /language-(\w+)/.exec(className || '');
-                  const codeContent = String(children).replace(/\n$/, '');
+            <>
+              {cleanContent && (
+                <ReactMarkdown
+                  components={{
+                    code(props: { className?: string; children?: React.ReactNode; inline?: boolean }) {
+                      const { className, children, inline } = props;
+                      const match = /language-(\w+)/.exec(className || '');
+                      const codeContent = String(children).replace(/\n$/, '');
 
-                  return !inline && match ? (
-                    <div className="my-4 rounded-lg overflow-hidden border border-vscode-border bg-vscode-editor shadow-sm">
-                      <div className="flex items-center justify-between px-3 py-2 bg-vscode-panel border-b border-vscode-border">
-                        <div className="flex items-center space-x-2 text-xs text-vscode-text-muted">
-                          <Terminal size={12} />
-                          <span>{match[1]}</span>
+                      return !inline && match ? (
+                        <div className="my-4 rounded-lg overflow-hidden border border-vscode-border bg-vscode-editor shadow-sm">
+                          <div className="flex items-center justify-between px-3 py-2 bg-vscode-panel border-b border-vscode-border">
+                            <div className="flex items-center space-x-2 text-xs text-vscode-text-muted">
+                              <Terminal size={12} />
+                              <span>{match[1]}</span>
+                            </div>
+                            <button
+                              onClick={() => handleCopyCode(codeContent)}
+                              className="flex items-center space-x-1 text-xs text-vscode-text-muted hover:text-vscode-text transition-colors"
+                            >
+                              {copiedCode === codeContent ? (
+                                <>
+                                  <Check size={12} className="text-green-400" />
+                                  <span>Copied</span>
+                                </>
+                              ) : (
+                                <>
+                                  <Copy size={12} />
+                                  <span>Copy</span>
+                                </>
+                              )}
+                            </button>
+                          </div>
+                          <SyntaxHighlighter
+                            style={vscDarkPlus as { [key: string]: React.CSSProperties }}
+                            language={match[1]}
+                            PreTag="div"
+                            className="!bg-vscode-editor !p-4 !m-0 text-sm overflow-x-auto"
+                            showLineNumbers={true}
+                            lineNumberStyle={{ minWidth: '2.5em', paddingRight: '1em', color: '#6e7681', textAlign: 'right' }}
+                            {...props}
+                          >
+                            {codeContent}
+                          </SyntaxHighlighter>
                         </div>
-                        <button
-                          onClick={() => handleCopyCode(codeContent)}
-                          className="flex items-center space-x-1 text-xs text-vscode-text-muted hover:text-vscode-text transition-colors"
+                      ) : (
+                        <code
+                          className="bg-vscode-panel px-1.5 py-0.5 rounded text-vscode-accent font-mono text-[13px]"
+                          {...props}
                         >
-                          {copiedCode === codeContent ? (
-                            <>
-                              <Check size={12} className="text-green-400" />
-                              <span>Copied</span>
-                            </>
-                          ) : (
-                            <>
-                              <Copy size={12} />
-                              <span>Copy</span>
-                            </>
-                          )}
-                        </button>
+                          {children}
+                        </code>
+                      );
+                    },
+                    p({ children }) {
+                      return <p className="mb-3 last:mb-0 text-vscode-text">{children}</p>;
+                    },
+                    ul({ children }) {
+                      return <ul className="list-disc list-outside ml-4 mb-3 space-y-1 text-vscode-text">{children}</ul>;
+                    },
+                    ol({ children }) {
+                      return <ol className="list-decimal list-outside ml-4 mb-3 space-y-1 text-vscode-text">{children}</ol>;
+                    },
+                    li({ children }) {
+                      return <li className="pl-1">{children}</li>;
+                    },
+                    blockquote({ children }) {
+                      return (
+                        <blockquote className="border-l-4 border-vscode-accent/50 pl-4 py-1 my-3 bg-vscode-accent/5 rounded-r text-vscode-text-muted italic">
+                          {children}
+                        </blockquote>
+                      );
+                    },
+                    h1: ({ children }) => <h1 className="text-xl font-bold mb-3 mt-4 text-vscode-text border-b border-vscode-border pb-2">{children}</h1>,
+                    h2: ({ children }) => <h2 className="text-lg font-bold mb-3 mt-4 text-vscode-text">{children}</h2>,
+                    h3: ({ children }) => <h3 className="text-base font-bold mb-2 mt-3 text-vscode-text">{children}</h3>,
+                    a: ({ href, children }) => (
+                      <a href={href} target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:underline">
+                        {children}
+                      </a>
+                    ),
+                    table: ({ children }) => (
+                      <div className="overflow-x-auto my-4 border border-vscode-border rounded-lg">
+                        <table className="min-w-full divide-y divide-vscode-border">{children}</table>
                       </div>
-                      <SyntaxHighlighter
-                        style={vscDarkPlus as { [key: string]: React.CSSProperties }}
-                        language={match[1]}
-                        PreTag="div"
-                        className="!bg-vscode-editor !p-4 !m-0 text-sm overflow-x-auto"
-                        showLineNumbers={true}
-                        lineNumberStyle={{ minWidth: '2.5em', paddingRight: '1em', color: '#6e7681', textAlign: 'right' }}
-                        {...props}
-                      >
-                        {codeContent}
-                      </SyntaxHighlighter>
+                    ),
+                    thead: ({ children }) => <thead className="bg-vscode-panel">{children}</thead>,
+                    tbody: ({ children }) => <tbody className="divide-y divide-vscode-border bg-vscode-editor">{children}</tbody>,
+                    tr: ({ children }) => <tr>{children}</tr>,
+                    th: ({ children }) => <th className="px-3 py-2 text-left text-xs font-medium text-vscode-text-muted uppercase tracking-wider">{children}</th>,
+                    td: ({ children }) => <td className="px-3 py-2 whitespace-nowrap text-sm text-vscode-text">{children}</td>,
+                  }}
+                >
+                  {cleanContent}
+                </ReactMarkdown>
+              )}
+
+              {/* Render Artifact Summaries */}
+              {hasArtifacts && (
+                <div className="mt-4 space-y-3">
+                  {message.artifacts?.map((artifact) => (
+                    <div key={artifact.id} className="bg-vscode-panel/50 border border-vscode-border rounded-lg overflow-hidden">
+                      <div className="px-4 py-3 flex items-center justify-between bg-vscode-panel border-b border-vscode-border/50">
+                        <div className="flex items-center space-x-2">
+                          <div className="p-1.5 bg-blue-500/10 rounded-md">
+                            <Zap size={14} className="text-blue-400" />
+                          </div>
+                          <span className="text-sm font-medium text-vscode-text">{artifact.title}</span>
+                        </div>
+                        <span className="text-xs text-vscode-text-muted bg-vscode-editor px-2 py-0.5 rounded-full border border-vscode-border/50">
+                          AutoAction
+                        </span>
+                      </div>
+                      <div className="p-3 bg-vscode-editor/30">
+                        <div className="space-y-2">
+                          {artifact.actions.map((action, idx) => (
+                            <div key={idx} className="flex items-center space-x-2 text-xs text-vscode-text-muted">
+                              <FileCode size={12} className="text-vscode-text-muted/70" />
+                              <span className="font-mono text-vscode-accent">{action.type}</span>
+                              <span className="truncate opacity-70">{action.filePath || action.command}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
                     </div>
-                  ) : (
-                    <code
-                      className="bg-vscode-panel px-1.5 py-0.5 rounded text-vscode-accent font-mono text-[13px]"
-                      {...props}
-                    >
-                      {children}
-                    </code>
-                  );
-                },
-                p({ children }) {
-                  return <p className="mb-3 last:mb-0 text-vscode-text">{children}</p>;
-                },
-                ul({ children }) {
-                  return <ul className="list-disc list-outside ml-4 mb-3 space-y-1 text-vscode-text">{children}</ul>;
-                },
-                ol({ children }) {
-                  return <ol className="list-decimal list-outside ml-4 mb-3 space-y-1 text-vscode-text">{children}</ol>;
-                },
-                li({ children }) {
-                  return <li className="pl-1">{children}</li>;
-                },
-                blockquote({ children }) {
-                  return (
-                    <blockquote className="border-l-4 border-vscode-accent/50 pl-4 py-1 my-3 bg-vscode-accent/5 rounded-r text-vscode-text-muted italic">
-                      {children}
-                    </blockquote>
-                  );
-                },
-                h1: ({ children }) => <h1 className="text-xl font-bold mb-3 mt-4 text-vscode-text border-b border-vscode-border pb-2">{children}</h1>,
-                h2: ({ children }) => <h2 className="text-lg font-bold mb-3 mt-4 text-vscode-text">{children}</h2>,
-                h3: ({ children }) => <h3 className="text-base font-bold mb-2 mt-3 text-vscode-text">{children}</h3>,
-                a: ({ href, children }) => (
-                  <a href={href} target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:underline">
-                    {children}
-                  </a>
-                ),
-                table: ({ children }) => (
-                  <div className="overflow-x-auto my-4 border border-vscode-border rounded-lg">
-                    <table className="min-w-full divide-y divide-vscode-border">{children}</table>
-                  </div>
-                ),
-                thead: ({ children }) => <thead className="bg-vscode-panel">{children}</thead>,
-                tbody: ({ children }) => <tbody className="divide-y divide-vscode-border bg-vscode-editor">{children}</tbody>,
-                tr: ({ children }) => <tr>{children}</tr>,
-                th: ({ children }) => <th className="px-3 py-2 text-left text-xs font-medium text-vscode-text-muted uppercase tracking-wider">{children}</th>,
-                td: ({ children }) => <td className="px-3 py-2 whitespace-nowrap text-sm text-vscode-text">{children}</td>,
-              }}
-            >
-              {message.content}
-            </ReactMarkdown>
+                  ))}
+                </div>
+              )}
+            </>
           )}
         </div>
       </div>

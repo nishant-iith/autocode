@@ -116,8 +116,8 @@ const EnhancedChatBot: React.FC = () => {
             <button
               onClick={() => setMode('chat')}
               className={`px-3 py-1.5 text-xs font-medium rounded-md transition-all duration-200 ${mode === 'chat'
-                  ? 'bg-vscode-accent text-white shadow-sm'
-                  : 'text-vscode-text-muted hover:text-vscode-text hover:bg-vscode-border/50'
+                ? 'bg-vscode-accent text-white shadow-sm'
+                : 'text-vscode-text-muted hover:text-vscode-text hover:bg-vscode-border/50'
                 }`}
             >
               Chat
@@ -126,10 +126,10 @@ const EnhancedChatBot: React.FC = () => {
               onClick={() => setMode('edit')}
               disabled={!currentProject}
               className={`px-3 py-1.5 text-xs font-medium rounded-md transition-all duration-200 ${mode === 'edit'
-                  ? 'bg-vscode-accent text-white shadow-sm'
-                  : currentProject
-                    ? 'text-vscode-text-muted hover:text-vscode-text hover:bg-vscode-border/50'
-                    : 'text-vscode-text-muted opacity-50 cursor-not-allowed'
+                ? 'bg-vscode-accent text-white shadow-sm'
+                : currentProject
+                  ? 'text-vscode-text-muted hover:text-vscode-text hover:bg-vscode-border/50'
+                  : 'text-vscode-text-muted opacity-50 cursor-not-allowed'
                 }`}
             >
               Edit
@@ -204,7 +204,8 @@ const EnhancedChatBot: React.FC = () => {
                   id: message.id,
                   role: message.role,
                   content: message.content,
-                  timestamp: message.timestamp
+                  timestamp: message.timestamp,
+                  artifacts: message.artifacts
                 }}
                 isLast={index === messages.length - 1}
               />
