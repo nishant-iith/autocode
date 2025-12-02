@@ -127,23 +127,41 @@ function App() {
                 {openTabs.length > 0 && activeTab !== 'preview' && <TabBar />}
 
                 <div className="flex-1 relative">
-                  {activeTab === 'preview' ? (
-                    <EnhancedPreview />
-                  ) : currentProject ? (
-                    activeFile ? (
-                      <Editor />
-                    ) : (
-                      <div className="h-full flex flex-col items-center justify-center text-vscode-text-muted">
-                        <div className="w-16 h-16 mb-4 bg-vscode-panel rounded-full flex items-center justify-center">
-                          <MessageCircle size={32} className="opacity-50" />
-                        </div>
-                        <p className="font-medium">No file is open</p>
-                        <p className="text-sm mt-2 opacity-70">Select a file from the sidebar to start editing</p>
-                        <p className="text-xs mt-4 opacity-50">or use AutoChat to generate code</p>
-                      </div>
-                    )
-                  ) : (
+                  {!currentProject ? (
                     <Welcome />
+                  ) : (
+                    <>
+                      {/* Editor View */}
+                      <div
+                        className={`absolute inset-0 transition-all duration-300 ease-in-out ${activeTab !== 'preview'
+                            ? 'opacity-100 z-10 translate-x-0'
+                            : 'opacity-0 z-0 -translate-x-4 pointer-events-none'
+                          }`}
+                      >
+                        {activeFile ? (
+                          <Editor />
+                        ) : (
+                          <div className="h-full flex flex-col items-center justify-center text-vscode-text-muted">
+                            <div className="w-16 h-16 mb-4 bg-vscode-panel rounded-full flex items-center justify-center">
+                              <MessageCircle size={32} className="opacity-50" />
+                            </div>
+                            <p className="font-medium">No file is open</p>
+                            <p className="text-sm mt-2 opacity-70">Select a file from the sidebar to start editing</p>
+                            <p className="text-xs mt-4 opacity-50">or use AutoChat to generate code</p>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Preview View */}
+                      <div
+                        className={`absolute inset-0 bg-vscode-bg transition-all duration-300 ease-in-out ${activeTab === 'preview'
+                            ? 'opacity-100 z-10 translate-x-0'
+                            : 'opacity-0 z-0 translate-x-4 pointer-events-none'
+                          }`}
+                      >
+                        <EnhancedPreview />
+                      </div>
+                    </>
                   )}
                 </div>
               </div>
