@@ -48,7 +48,10 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message, isLast }) => {
 
   // Function to strip artifact tags from content for display
   const getCleanContent = (content: string) => {
-    return content.replace(/<(auto|bolt)Artifact[\s\S]*?<\/(auto|bolt)Artifact>/gi, '').trim();
+    return content
+      .replace(/<(auto|bolt)Artifact[\s\S]*?<\/(auto|bolt)Artifact>/gi, '')
+      .replace(/<(auto|bolt)Action[\s\S]*?<\/(auto|bolt)Action>/gi, '')
+      .trim();
   };
 
   const cleanContent = isUser ? message.content : getCleanContent(message.content);
