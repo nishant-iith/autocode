@@ -124,7 +124,7 @@ function App() {
               <Sidebar onOpenSettings={() => setShowSettings(true)} />
 
               <div className="flex flex-col flex-1">
-                {openTabs.length > 0 && <TabBar />}
+                {openTabs.length > 0 && activeTab !== 'preview' && <TabBar />}
 
                 <div className="flex-1 relative">
                   {activeTab === 'preview' ? (
@@ -166,8 +166,8 @@ function App() {
                 title="Drag to resize chat panel"
               >
                 <div className={`w-1 h-12 rounded-full transition-all duration-200 ${isResizingChat
-                    ? 'bg-blue-400 h-20'
-                    : 'bg-slate-600 group-hover:bg-blue-400/50'
+                  ? 'bg-blue-400 h-20'
+                  : 'bg-slate-600 group-hover:bg-blue-400/50'
                   }`} />
               </div>
 
