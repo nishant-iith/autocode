@@ -26,7 +26,7 @@ export interface OperationProgress {
  * Service class for executing AI-driven file operations
  */
 export class AIFileOperations {
-  private static baseURL = 'http://localhost:5000/api';
+  private static baseURL = 'http://localhost:5001/api';
 
   /**
    * Executes a single AI action

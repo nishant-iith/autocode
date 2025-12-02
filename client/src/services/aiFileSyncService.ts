@@ -26,7 +26,7 @@ export class AIFileSyncService {
   private isConnected = false;
   private currentWorkspaceId: string | null = null;
 
-  private constructor() {}
+  private constructor() { }
 
   /**
    * Get singleton instance of the sync service
@@ -45,7 +45,7 @@ export class AIFileSyncService {
     if (this.isConnected) return;
 
     try {
-      this.socket = io('http://localhost:5000', {
+      this.socket = io('http://localhost:5001', {
         transports: ['websocket', 'polling'],
         autoConnect: true,
       });

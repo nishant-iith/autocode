@@ -50,7 +50,7 @@ export interface ProjectScope {
  * Enhanced AI Service with automatic context and streaming capabilities
  */
 export class EnhancedAIService {
-  private static readonly BASE_URL = 'http://localhost:5000/api/ai';
+  private static readonly BASE_URL = 'http://localhost:5001/api/ai';
   public config: AIServiceConfig;
   private projectScope?: ProjectScope;
   private abortController?: AbortController;
